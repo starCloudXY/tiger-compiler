@@ -8,140 +8,204 @@
 
 namespace A {
 
-class Stm;
-class Exp;
-class ExpList;
+    class Stm;
+    class Exp;
+    class ExpList;
 
-enum BinOp { PLUS = 0, MINUS, TIMES, DIV };
+    enum BinOp { PLUS = 0, MINUS, TIMES, DIV };
+    class Table {
+    public:
+        Table(std::string id, int value, const Table *tail)
+                : id(std::move(id)), value(value), tail(tail) {}
 
-// some data structures used by interp
-class Table;
-class IntAndTable;
+        int Lookup(const std::string &key) const;
+        Table *Update(const std::string &key, int val) const;
 
-class Stm {
- public:
-  virtual int MaxArgs() const = 0;
-  virtual Table *Interp(Table *) const = 0;
-};
+    private:
+        std::string id;
+        int value;
+        const Table *tail;
+    };
 
-class CompoundStm : public Stm {
- public:
-  CompoundStm(Stm *stm1, Stm *stm2) : stm1(stm1), stm2(stm2) {}
-  int MaxArgs() const override;
-  Table *Interp(Table *) const override;
 
- private:
-  Stm *stm1, *stm2;
-};
+    struct IntAndTable {
+        int i;
+        Table *t;
 
-class AssignStm : public Stm {
- public:
-  AssignStm(std::string id, Exp *exp) : id(std::move(id)), exp(exp) {}
-  int MaxArgs() const override;
-  Table *Interp(Table *) const override;
+        IntAndTable(int i, Table *t) : i(i), t(t) {}
+    };
 
- private:
-  std::string id;
-  Exp *exp;
-};
 
-class PrintStm : public Stm {
- public:
-  explicit PrintStm(ExpList *exps) : exps(exps) {}
-  int MaxArgs() const override;
-  Table *Interp(Table *) const override;
+    class Stm {
+    public:
+        virtual int MaxArgs() const = 0;
+        virtual Table *Interp(Table *) const = 0;
+    };
 
- private:
-  ExpList *exps;
-};
+    class CompoundStm : public Stm {
+    public:
+        CompoundStm(Stm *stm1, Stm *stm2) : stm1(stm1), stm2(stm2) {}
+        int MaxArgs() const override;
+        Table *Interp(Table *) const override;
 
-class Exp {
-  // TODO: you'll have to add some definitions here (lab1).
-  // Hints: You may add interfaces like `int MaxArgs()`,
-  //        and ` IntAndTable *Interp(Table *)`
-};
+    private:
+        Stm *stm1, *stm2;
+    };
 
-class IdExp : public Exp {
- public:
-  explicit IdExp(std::string id) : id(std::move(id)) {}
-  // TODO: you'll have to add some definitions here (lab1).
+    class AssignStm : public Stm {
+    public:
+        AssignStm(std::string id, Exp *exp) : id(std::move(id)), exp(exp) {}
+        int MaxArgs() const override;
+        Table *Interp(Table *) const override;
 
- private:
-  std::string id;
-};
+    private:
+        std::string id;
+        Exp *exp;
+    };
 
-class NumExp : public Exp {
- public:
-  explicit NumExp(int num) : num(num) {}
-  // TODO: you'll have to add some definitions here.
+    class PrintStm : public Stm {
+    public:
+        explicit PrintStm(ExpList *exps) : exps(exps) {}
+        int MaxArgs() const override;
+        Table *Interp(Table *) const override;
 
- private:
-  int num;
-};
+    private:
+        ExpList *exps;
+    };
 
-class OpExp : public Exp {
- public:
-  OpExp(Exp *left, BinOp oper, Exp *right)
-      : left(left), oper(oper), right(right) {}
+    class Exp {
+        // TODO: you'll have to add some definitions here (lab1).
+        // Hints: You may add interfaces like `int MaxArgs()`,
+        //        and ` IntAndTable *Interp(Table *)`
+    public:
+        virtual int MaxArgs() const = 0;
+        virtual IntAndTable *Interp(Table *) const =0;
+    };
 
- private:
-  Exp *left;
-  BinOp oper;
-  Exp *right;
-};
+    class IdExp : public Exp {
+    public:
+        explicit IdExp(std::string id) : id(std::move(id)) {}
+        int MaxArgs() const override{
+            return 0;
+        };
+        IntAndTable *Interp(Table *table) const override{
+            return new  IntAndTable(table->Lookup(id), table);
+        };
 
-class EseqExp : public Exp {
- public:
-  EseqExp(Stm *stm, Exp *exp) : stm(stm), exp(exp) {}
+    private:
+        std::string id;
+    };
 
- private:
-  Stm *stm;
-  Exp *exp;
-};
+    class NumExp : public Exp {
+    public:
+        explicit NumExp(int num) : num(num) {}
+        int MaxArgs() const override{
+            return 0;
+        } ;
+        IntAndTable *Interp(Table * table) const override{
+            return new IntAndTable(num,table);
+        };
+    private:
+        int num;
+    };
 
-class ExpList {
- public:
-  // TODO: you'll have to add some definitions here (lab1).
-  // Hints: You may add interfaces like `int MaxArgs()`, `int NumExps()`,
-  //        and ` IntAndTable *Interp(Table *)`
-};
+    class OpExp : public Exp {
+    public:
+        OpExp(Exp *left, BinOp oper, Exp *right)
+                : left(left), oper(oper), right(right) {}
+        int MaxArgs() const override{
+            return std::max(left->MaxArgs(),right->MaxArgs());
+        } ;
+        IntAndTable *Interp(Table *table) const override{
+            IntAndTable *left_table = left->Interp(table);
+            IntAndTable *right_table = right->Interp(left_table->t);
+            switch (oper) {
+                case PLUS:
+                    return new IntAndTable(left_table->i+right_table->i,right_table->t);
+                case MINUS:
+                    return new IntAndTable(left_table->i-right_table->i,right_table->t);
+                case DIV:
+                    return new IntAndTable(left_table->i/right_table->i,right_table->t);
+                case TIMES:
+                    return new IntAndTable(left_table->i*right_table->i,right_table->t);
+                default:
+                    return nullptr;
+            }
+        };
 
-class PairExpList : public ExpList {
- public:
-  PairExpList(Exp *exp, ExpList *tail) : exp(exp), tail(tail) {}
-  // TODO: you'll have to add some definitions here (lab1).
- private:
-  Exp *exp;
-  ExpList *tail;
-};
+    private:
+        Exp *left;
+        BinOp oper;
+        Exp *right;
+    };
 
-class LastExpList : public ExpList {
- public:
-  LastExpList(Exp *exp) : exp(exp) {}
-  // TODO: you'll have to add some definitions here (lab1).
- private:
-  Exp *exp;
-};
+    class EseqExp : public Exp {
+    public:
+        EseqExp(Stm *stm, Exp *exp) : stm(stm), exp(exp) {}
+        int MaxArgs() const override{
+            return std::max(stm->MaxArgs(),exp->MaxArgs());
+        } ;
+        IntAndTable *Interp(Table *table) const override{
+            Table * new_table = stm->Interp(table);
+            return exp->Interp(new_table);
+        };
+    private:
+        Stm *stm;
+        Exp *exp;
+    };
 
-class Table {
- public:
-  Table(std::string id, int value, const Table *tail)
-      : id(std::move(id)), value(value), tail(tail) {}
-  int Lookup(const std::string &key) const;
-  Table *Update(const std::string &key, int val) const;
+    class ExpList {
+    public:
+        // TODO: you'll have to add some definitions here (lab1).
+        // Hints: You may add interfaces like `int MaxArgs()`, `int NumExps()`,
+        //        and ` IntAndTable *Interp(Table *)`
+    public:
+        virtual int MaxArgs() const = 0;
+        virtual IntAndTable *Interp(Table *) const = 0;
+        virtual int NumExps() const = 0;
+    };
 
- private:
-  std::string id;
-  int value;
-  const Table *tail;
-};
+    class PairExpList : public ExpList {
+    public:
+        PairExpList(Exp *exp, ExpList *tail) : exp(exp), tail(tail) {}
+        // TODO: you'll have to add some definitions here (lab1).
+        int MaxArgs() const override{
+            return std::max(exp->MaxArgs(),tail->MaxArgs());
+        }
+        int NumExps() const override{
+            return 1+tail->NumExps();
+        }
 
-struct IntAndTable {
-  int i;
-  Table *t;
+        IntAndTable *Interp(Table *t) const {
+            IntAndTable *first_int_and_table = exp->Interp(t);
+            printf("%d ", first_int_and_table->i);
+            IntAndTable *last_int_and_table = tail->Interp(first_int_and_table->t);
+            return last_int_and_table;
+        }
+    private:
+        Exp *exp;
+        ExpList *tail;
+    };
+//printstm的最后一个参数
+    class LastExpList : public ExpList {
+    public:
+        LastExpList(Exp *exp) : exp(exp) {}
+        int MaxArgs() const override{
+            return exp->MaxArgs();
+        };
+        IntAndTable *Interp(Table *table) const override{
+            IntAndTable *intAndTable=exp->Interp(table);
+            printf("%d\n",intAndTable->i);
+            return intAndTable;
+        };
+        int NumExps() const override{
+            return 1;
+        } ;
+    private:
+        Exp *exp;
+    };
 
-  IntAndTable(int i, Table *t) : i(i), t(t) {}
-};
+
 
 }  // namespace A
 
