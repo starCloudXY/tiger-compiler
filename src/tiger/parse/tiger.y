@@ -95,8 +95,8 @@ exp : INT {$$ = new absyn::IntExp(scanner_.GetTokPos(), $1) ;}
     | exp LE exp {$$ = new absyn::OpExp(scanner_.GetTokPos(), absyn::LE_OP, $1, $3);}
     | exp GT exp {$$ = new absyn::OpExp(scanner_.GetTokPos(), absyn::GT_OP, $1, $3);}
     | exp GE exp {$$ = new absyn::OpExp(scanner_.GetTokPos(), absyn::GE_OP, $1, $3);}
-    | exp OR exp {$$ = new absyn::IfExp(scanner_.GetTokPos(), $1, new absyn::IntExp(scanner_.GetTokPos(), 1), $3);}|
-    | exp AND exp {$$ = new absyn::IfExp(scanner_.GetTokPos(), $1, $3, new absyn::IntExp(scanner_.GetTokPos(), 0));}|
+    | exp OR exp {$$ = new absyn::OpExp(scanner_.GetTokPos(), absyn::OR_OP, $1, $3);}
+    | exp AND exp {$$ = new absyn::OpExp(scanner_.GetTokPos(), absyn::AND_OP, $1, $3);}
     | IF exp THEN exp {$$ = new absyn::IfExp(scanner_.GetTokPos(), $2,$4,nullptr);}
     | IF exp THEN exp ELSE exp {$$ = new absyn::IfExp(scanner_.GetTokPos(), $2,$4,$6);}
     | WHILE exp DO exp {$$ = new absyn::WhileExp(scanner_.GetTokPos(),$2,$4);}
@@ -111,6 +111,7 @@ exp : INT {$$ = new absyn::IntExp(scanner_.GetTokPos(), $1) ;}
     | ID LPAREN actuals RPAREN {$$ = new absyn::CallExp(scanner_.GetTokPos(), $1, $3);}
     | ID LBRACE rec RBRACE {$$ = new absyn::RecordExp(scanner_.GetTokPos(), $1, $3);}
     | oneinarray OF exp {$$ = new absyn::ArrayExp(scanner_.GetTokPos(), ((absyn::SimpleVar *)(((absyn::SubscriptVar *)($1))->var_))->sym_, ((absyn::SubscriptVar *)($1))->subscript_, $3);}
+
     ;
 
 vardec : VAR ID ASSIGN exp {$$ = new absyn::VarDec(scanner_.GetTokPos(),$2,nullptr,$4);}
@@ -146,14 +147,16 @@ tyfields_nonempty : tyfield {$$ = new absyn::FieldList($1);}
 tyfield : ID COLON ID {$$ = new absyn::Field(scanner_.GetTokPos(),$1,$3);}
     ;
 
-rec : rec_one {$$ = new absyn::EFieldList($1);}
-    | rec_one COMMA rec_nonempty {$$ = $3; $$ -> Prepend($1);}
+rec : rec_nonempty {$$ = $1;}
+    | {$$ = new absyn::EFieldList();}
     ;
+
 rec_nonempty : rec_one {$$ = new absyn::EFieldList($1);}
-    | rec_one COMMA rec_nonempty {$$ = $3; $$ -> Prepend($1);}
+    | rec_one COMMA rec_nonempty {$$ = $3; $$->Prepend($1);}
     ;
+
 rec_one : ID EQ exp {$$ = new absyn::EField($1, $3);}
-;
+    ;
 fundec : fundec_one {$$ = new absyn::FunDecList($1);}
     | fundec_one fundec {$$ = $2; $$->Prepend($1);}
 ;
