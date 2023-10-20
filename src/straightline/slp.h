@@ -74,7 +74,6 @@ namespace A {
     };
 
     class Exp {
-        // TODO: you'll have to add some definitions here (lab1).
         // Hints: You may add interfaces like `int MaxArgs()`,
         //        and ` IntAndTable *Interp(Table *)`
     public:
@@ -156,7 +155,6 @@ namespace A {
 
     class ExpList {
     public:
-        // TODO: you'll have to add some definitions here (lab1).
         // Hints: You may add interfaces like `int MaxArgs()`, `int NumExps()`,
         //        and ` IntAndTable *Interp(Table *)`
     public:
@@ -168,7 +166,6 @@ namespace A {
     class PairExpList : public ExpList {
     public:
         PairExpList(Exp *exp, ExpList *tail) : exp(exp), tail(tail) {}
-        // TODO: you'll have to add some definitions here (lab1).
         int MaxArgs() const override{
             return std::max(exp->MaxArgs(),tail->MaxArgs());
         }
