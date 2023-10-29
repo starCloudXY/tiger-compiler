@@ -17,7 +17,8 @@ type::Ty *SimpleVar::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
   env::EnvEntry *entry = venv->Look(sym_);
   if(entry && typeid(*entry)== typeid(env::VarEntry)){
     return (static_cast<env::VarEntry*>(entry))->ty_->ActualTy();
-  } else{
+  }
+  else{
     errormsg->Error(pos_,"undefined variable %s",sym_->Name().data());
   }
   return type::IntTy::Instance();
@@ -29,11 +30,9 @@ type::Ty *FieldVar::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
   type::Ty *variable_type = var_->SemAnalyze(venv,tenv,labelcount,errormsg);
   if(variable_type== nullptr){
     errormsg->Error(pos_,"variable not defined");
-    ////错了的话return啥比较好
     return type::NilTy::Instance();
   }
   else {
-    ////究竟是比较Actual Type还是Type
     if(typeid(*(variable_type->ActualTy()))!=typeid(type::RecordTy)){
       errormsg->Error(pos_,"variable not a record type");
       return type::NilTy::Instance();
@@ -47,6 +46,7 @@ type::Ty *FieldVar::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
           return field->ty_;
         }
       }
+      errormsg->Error(pos_,"field "+sym_->Name()+" doesn't exist");
       return real_type;
     }
   }
@@ -62,9 +62,8 @@ type::Ty *SubscriptVar::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
     return type::NilTy::Instance();
   }
   else {
-    ////究竟是比较Actual Type还是Type
     if(typeid(*(variable_type->ActualTy()))!=typeid(type::ArrayTy)){
-      errormsg->Error(pos_,"variable not a array type");
+      errormsg->Error(pos_,"array type required");
       return type::NilTy::Instance();
     }
     else{
@@ -109,34 +108,34 @@ type::Ty *CallExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
                               int labelcount, err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab4 code here */
     //func_函数名;args_参数
-    //
-    std::cout<<" Begin Call Check!!"<<std::endl;
   env::FunEntry *funEntry = (env::FunEntry*) venv->Look(func_);
   if(funEntry== nullptr){
-    errormsg->Error(pos_,"function "+func_->Name()+" is undefined!");
+    errormsg->Error(pos_,"undefined function "+func_->Name());
   }
   auto formal_ = funEntry->formals_->GetList().begin();
   auto arg = args_->GetList().begin();
     //逐个比较传入参数
   for(;formal_!=funEntry->formals_->GetList().end()&&arg!=args_->GetList().end();formal_++,arg++){
-    if(typeid((*arg)->SemAnalyze(venv,tenv,labelcount,errormsg)->ActualTy())!=
-        typeid((*formal_)->ActualTy())){
-      errormsg->Error((*arg)->pos_,"type mismatched");
+    type::Ty *ty = (*arg)->SemAnalyze(venv,tenv,labelcount,errormsg)->ActualTy();
+    if(typeid(*(*formal_)->ActualTy())!=
+        typeid(*(ty->ActualTy()))){
+      errormsg->Error((*arg)->pos_,"para type mismatch");
     }
   }
   if(arg != args_->GetList().end()){
-    errormsg->Error((*arg)->pos_,"too many params in function");
+    errormsg->Error((*arg)->pos_,"too many params in function "+func_->Name());
+    return type::NilTy::Instance();
   }
   if(formal_ != funEntry->formals_->GetList().end()){
-    errormsg->Error((*arg)->pos_,"too little params in function");
+    errormsg->Error((*arg)->pos_,"too little params in function"+func_->Name());
+    return type::NilTy::Instance();
   }
   ////nullptr?
-  return funEntry->result_->ActualTy();
+  return ((env::FunEntry*)funEntry)->result_->ActualTy();
 }
 
 type::Ty *OpExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
                             int labelcount, err::ErrorMsg *errormsg) const {
-  std::cout<<" Begin Op Check!!"<<std::endl;
   /* TODO: Put your lab4 code here */
   type::Ty *left_ty = left_->SemAnalyze(venv,tenv,labelcount,errormsg)->ActualTy();
   type::Ty *right_ty = right_->SemAnalyze(venv,tenv,labelcount,errormsg)->ActualTy();
@@ -162,12 +161,12 @@ type::Ty *OpExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
 type::Ty *RecordExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
                                 int labelcount, err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab4 code here */
-//  type::Ty * ty = tenv->Look(typ_);
-//  std::cout<<"Record type : "<<typ_->Name()<<std::endl;
-//  if(!ty){
-//    errormsg->Error(pos_,"Function undeclared"+typ_->Name());
-//    return type::NilTy::Instance();
-//  }
+  type::Ty * ty = tenv->Look(typ_);
+  std::cout<<"Record type : "<<typ_->Name()<<std::endl;
+  if(!ty){
+    errormsg->Error(pos_,"undefined type "+typ_->Name());
+    return type::NilTy::Instance();
+  }
 //  if(!fields_){
 //    errormsg->Error(pos_,"None field_");
 //    return type::NilTy::Instance();
@@ -202,56 +201,7 @@ type::Ty *RecordExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
 //    }
 //  }
 //  return ty;
-  type::Ty * record_type;
-  type::Ty * type= nullptr;
-  std::cout<<" Begin Record Check!!"<<std::endl;
-  if (typ_ == nullptr) {
-    record_type = nullptr;
-  }
-  else {
-    record_type = tenv->Look(typ_);
-  }
-  type::RecordTy *real_record_type = dynamic_cast<type::RecordTy *> (record_type);
-  if (real_record_type == nullptr) {
-    errormsg->Error(pos_, "undefined type " + typ_->Name());
-  }
-  else {
-    int total_error = 0;
-    for (absyn::EField * eField: fields_->GetList()) {
-      //                errormsg->Error(pos_, "in loop " + eField->name_->Name());
-      std::cout<<eField->name_->Name()<<" Begin Check!!"<<std::endl;
-      bool matched = false;
-      type::Ty *field_type = nullptr;
-      for (type::Field *field: real_record_type->fields_->GetList()) {
-        if (eField->name_->Name() == field->name_->Name()) {
-          matched = true;
-          field_type = field->ty_;
-          break;
-        }
-      }
-      if (!matched) { // the field is not matched to the field listes
-         errormsg->Error(pos_, "field is not in the record type.");
-         break;
-      }
-      else { //if matched, then check the field type is matched to the field type
-
-        type::Ty *exp_type = eField->exp_->SemAnalyze(venv, tenv, labelcount, errormsg);
-
-        if (field_type && exp_type && !field_type->IsSameType(exp_type)) {
-          total_error++;
-          errormsg->Error(
-              pos_,
-              "field init expression is not matched to the type defined.");
-        }
-      }
-    }
-    if (total_error == 0) {
-      type = real_record_type;
-      return type;
-    }
-  }
-  type = real_record_type;
-  return type;
+  return ty;
 }
 
 type::Ty *SeqExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
@@ -269,11 +219,30 @@ type::Ty *SeqExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
 type::Ty *AssignExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
                                 int labelcount, err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab4 code here */
+
   type::Ty *var_ty = var_->SemAnalyze(venv,tenv,labelcount,errormsg)->ActualTy();
   type::Ty *exp_ty = exp_->SemAnalyze(venv,tenv,labelcount,errormsg)->ActualTy();
   if(typeid(*(exp_ty->ActualTy()))==typeid(type::NilTy)&&
       typeid(*(var_ty))== typeid(type::RecordTy)){
     return type::NilTy::Instance();
+  }
+  else if (var_ty && typeid(*(var_ty)->ActualTy()) == typeid(type::IntTy)) {
+    absyn::SimpleVar *simpleVar = dynamic_cast<SimpleVar *>(var_);
+    if (simpleVar != nullptr) {
+      env::EnvEntry *envEntry;
+      if (simpleVar->sym_ == nullptr) {
+        envEntry = nullptr;
+      }
+      else {
+        envEntry = venv->Look(simpleVar->sym_);
+      }
+      if (envEntry != nullptr) {
+        bool readonly = envEntry->readonly_;
+        if (readonly) {
+          errormsg->Error(pos_, "loop variable can't be assigned");
+        }
+      }
+    }
   }
   ///for loop variable
   if(typeid(*(var_ty->ActualTy()))!= typeid(*(exp_ty->ActualTy()))){
@@ -290,21 +259,20 @@ type::Ty *IfExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
   type::Ty* body_type = then_->SemAnalyze(venv,tenv,labelcount,errormsg);
   if(elsee_ == nullptr){
     if(body_type&&typeid(*(body_type->ActualTy()))!= typeid(type::VoidTy))
-      errormsg->Error(pos_,"if then's body should have no value");
+      errormsg->Error(pos_,"if-then exp's body must produce no value");
     return type::VoidTy::Instance();
   }
   else{
-      if(typeid(*(body_type->ActualTy()))==
-          typeid(*(elsee_->SemAnalyze(venv,tenv,labelcount,errormsg)))) {
+      type::Ty *else_type = elsee_->SemAnalyze(venv,tenv,labelcount,errormsg);
+      if(body_type->IsSameType(else_type)) {
       return  body_type;
       }
       else{
+      std::cout<< typeid(*(body_type->ActualTy())).name()<<"    "<<typeid(*(else_type->ActualTy())).name()<<std::endl;
       errormsg->Error(pos_, "then exp and else exp type mismatch");
       return type::VoidTy::Instance();
       }
   }
-
-
 }
 
 type::Ty *WhileExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
@@ -321,6 +289,8 @@ type::Ty *WhileExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
     result = type::NilTy::Instance();
   else
     result = body_->SemAnalyze(venv,tenv,labelcount,errormsg);
+  if (typeid(*(result->ActualTy()))!= typeid(type::VoidTy))
+    errormsg->Error(body_->pos_, "while body must produce no value");
   venv->EndScope();
   return result;
 }
@@ -334,7 +304,7 @@ type::Ty *ForExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
   venv->Enter(var_,new env::VarEntry(lo_type, true));
   type::Ty *hi_type = hi_->SemAnalyze(venv,tenv,labelcount,errormsg);
   if(typeid(*(hi_type->ActualTy()))!= typeid(type::IntTy)){
-    errormsg->Error(hi_->pos_,"range type is not int");
+    errormsg->Error(hi_->pos_,"for exp's range type is not integer");
   }
   type::Ty *result;
   if(!body_)
@@ -381,12 +351,12 @@ type::Ty *ArrayExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
     return nullptr;
   }
   else {
-    type::Ty *array_type = tenv->Look(typ_);
+    type::Ty *array_type = tenv->Look(typ_)->ActualTy();
+    type::Ty *init_element_type = init_->SemAnalyze(venv, tenv, labelcount, errormsg);
     size_->SemAnalyze(venv,tenv,labelcount,errormsg);
-    ////need check
-    if(((type::ArrayTy*)array_type)->ty_&&
-        typeid(init_->SemAnalyze(venv, tenv, labelcount, errormsg))!= typeid(((type::ArrayTy*)array_type)->ty_)){
-      errormsg->Error(pos_,"type mismatched");
+    if(((type::ArrayTy*)array_type)->ty_&&((type::ArrayTy*)array_type)->ty_->IsSameType(init_element_type)
+        ){
+//      errormsg->Error(pos_,"type mismatch");
     }
     return array_type;
   }
@@ -422,36 +392,39 @@ void FunctionDec::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
 //  type::Ty *ty;
 //  ty=funDec->body_->SemAnalyze(venv,tenv,labelcount,errormsg);
 //  venv->EndScope();
-  absyn::FunDec *last_function = nullptr;
+  const std::list<FunDec *> * function_list = &functions_->GetList();
+  for (auto iter = function_list->begin(); iter != function_list->end(); iter++) {
+    auto next_iter = iter;
+    if (next_iter != function_list->end()) next_iter++;
+    for (; next_iter != function_list->end(); next_iter++)
+      if ((*next_iter)->name_->Name() ==(*iter)->name_->Name())
+        errormsg->Error((*iter)->pos_, "two functions have the same name");
 
-  for (absyn::FunDec *function : functions_->GetList()) {
-    if (last_function && function->name_->Name() == last_function->name_->Name()) {
-      errormsg->Error(function->pos_, "two functions have the same name");
-    }
-    venv->Enter(function->name_, new env::FunEntry(nullptr, nullptr));
-    last_function = function;
-  }
+    type::Ty* result;
+    if ((*iter)->result_ != nullptr) {
+      result = tenv->Look((*iter)->result_);
+      if (result == nullptr)
+        errormsg->Error(pos_, "FunctionDec undefined result");
+    } else result = type::VoidTy::Instance();
+    venv->Enter((*iter)->name_, new env::FunEntry((*iter)->params_->MakeFormalTyList(tenv,errormsg), result));
+  };
 
-  for (absyn::FunDec *function : functions_->GetList()) {
-
-    type::Ty *result_ty;
-    if (function->result_ == nullptr) result_ty = nullptr;
-    else result_ty = tenv->Look(function->result_);
-    type::TyList *formals = function->params_->MakeFormalTyList(tenv, errormsg);
-    venv->Set(function->name_, new env::FunEntry(formals, result_ty));
+  for (auto iter = function_list->begin(); iter != function_list->end(); iter++) {
     venv->BeginScope();
-    auto formal_it = formals->GetList().begin();
-    auto param_it = function->params_->GetList().begin();
-    for (; param_it != function->params_->GetList().end(); formal_it++, param_it++) {
-      venv->Enter((*param_it)->name_, new env::VarEntry(*formal_it));
-    }
-    type::Ty *ty = function->body_->SemAnalyze(venv, tenv, labelcount, errormsg);
-    //            errormsg->Error(pos_, "function body over");
-    if (function->result_ == nullptr && ty && (typeid(*(ty->ActualTy())) != typeid(type::NilTy) && typeid(*(ty->ActualTy())) != typeid(type::VoidTy))) {
-      errormsg->Error(pos_, "procedure returns value");
-    }
+    const std::list<Field *>* field_list = &(*iter)->params_->GetList();
+    for (auto field_iter = field_list->begin(); field_iter != field_list->end(); field_iter++) {
+      type::Ty* ty = tenv->Look((*field_iter)->typ_);
+      if (!ty) errormsg->Error((*field_iter)->pos_, "undefined type %s", (*field_iter)->typ_->Name().c_str());
+      venv->Enter((*field_iter)->name_, new env::VarEntry(ty));
+    };
+    type::Ty* body_ty = (*iter)->body_->SemAnalyze(venv, tenv, labelcount, errormsg);
+    type::Ty* dec_ty = ((env::FunEntry*) venv->Look((*iter)->name_))->result_;
+    if (!body_ty->IsSameType(dec_ty)) {
+      if (typeid(*dec_ty) == typeid(type::VoidTy)) errormsg->Error((*iter)->body_->pos_, "procedure returns value");
+      else errormsg->Error((*iter)->body_->pos_, "return type mismatch");
+    };
     venv->EndScope();
-  }
+  };
 }
 
 void VarDec::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv, int labelcount,
@@ -464,74 +437,68 @@ void VarDec::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv, int labelcount,
 //                      var a : my_record := nil
   std::cout<<"VarDec check"<<std::endl;
   type::Ty *exp_ty = init_->SemAnalyze(venv, tenv, labelcount, errormsg);
+
   if (typ_ == nullptr) {
     if (typeid(*(exp_ty->ActualTy())) == typeid(type::NilTy))
       errormsg->Error(pos_, "init should not be nil without type specified");
     venv->Enter(var_, new env::VarEntry(exp_ty->ActualTy()));
   }
   else{
-    std::cout<<"with type VarDec check"<<std::endl;
-
+    type::Ty *type_ty = tenv->Look(typ_);
     if(exp_ty== nullptr){
       errormsg->Error(pos_, "init type is nullptr");
       std::cout<<"exp_ty is nullptr."<<std::endl;
     }
-    std::cout<<"with init_ty VarDec check"<<std::endl;
     if(typeid(*(exp_ty->ActualTy()))== typeid(type::NilTy)){
       std::cout<<"check Record Ty"<<std::endl;
-      type::Ty *type_ty = tenv->Look(typ_);
       std::cout<<"Look tenv!"<<std::endl;
       if(type_ty&&typeid(*(type_ty->ActualTy()))!= typeid(type::RecordTy))
         errormsg->Error(pos_, "init should not be nil without type specified");
     }
-    venv->Enter(var_,new env::VarEntry(exp_ty));
+    if(type_ty->IsSameType(exp_ty))
+    venv->Enter(var_,new env::VarEntry(type_ty));
+    else errormsg->Error(pos_,"type mismatch");
   }
-  std::cout<<"Finish VarDec check"<<std::endl;
 
 }
 
 void TypeDec::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv, int labelcount,
                          err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab4 code her */
-  auto type = types_->GetList();
+  const std::list<NameAndTy *> * type = &types_->GetList();
   //先存name
-  for (auto iter = type.begin();iter != type.end(); iter++) {
+  for (auto iter = type->begin();iter != type->end(); iter++) {
     auto next_iter = iter;
-    if (next_iter != type.end()) next_iter++;
-    for (; next_iter != type.end(); next_iter++)
+    if (next_iter != type->end()) next_iter++;
+    for (; next_iter != type->end(); next_iter++)
       if ((*next_iter)->name_ == (*iter)->name_)
         errormsg->Error(pos_, "two types have the same name");
     //type存成nullptr
+    std::cout<<(*iter)->name_->Name()<<std::endl;
     tenv->Enter((*iter)->name_, new type::NameTy((*iter)->name_, nullptr));
   };
 
-  for (auto iter = type.begin(); iter != type.end(); iter++) {
+  for (auto iter = type->begin(); iter != type->end(); iter++) {
     //再将相应的env存进去
-    type::Ty *ty = (*iter)->ty_->SemAnalyze(tenv, errormsg);
-    tenv->Set((*iter)->name_,ty);
-    std::cout<<(*iter)->name_->Name()<<" "<<typeid(*(ty->ActualTy())).name()<<std::endl;
-  };
-  bool cycle = false;
-  for (auto iter = type.begin(); iter != type.end(); iter++) {
-    if ((*iter)->name_ == nullptr) {
-      std::cout << "Iter name is NULL!!!!" << std::endl;
-      break;
-    }
-    type::Ty *ty = tenv->Look((*iter)->name_);
-    if (ty == nullptr) {
-      std::cout << "Type of " << (*iter)->name_->Name() << " is NULL!!!!"
-                << std::endl;
-      break;
-    }
-    std::cout<<"CHECK "<<(*iter)->name_->Name()<<"  "<<typeid(*ty).name()<<std::endl;
+//    type::Ty *ty = (*iter)->ty_->SemAnalyze(tenv, errormsg);
 
-    if (typeid(*ty) == typeid(type::NameTy)) {
-      type::Ty *ty_ty = ((type::NameTy *)ty)->ty_;
+//    tenv->Set((*iter)->name_,ty);
+    type::NameTy* name_ty = (type::NameTy*) tenv->Look((*iter)->name_);
+    name_ty->ty_ = (*iter)->ty_->SemAnalyze(tenv, errormsg);
+  };
+
+  bool cycle = false;
+  const std::list<NameAndTy *> * ty_list = &types_->GetList();
+  for (auto iter = ty_list->begin(); iter != ty_list->end(); iter++) {
+    type::Ty* ty = tenv->Look((*iter)->name_);
+    std::cout<<typeid(*(ty)).name()<<std::endl;
+    if (typeid(*(ty))== typeid(type::NameTy)) {
+      type::Ty* ty_ty = ((type::NameTy*) ty)->ty_;
       while (ty_ty != nullptr &&
-             typeid(*ty_ty) == typeid(type::NameTy)) {
-        type::NameTy *name_ty = (type::NameTy *)ty_ty;
-        std::cout << "Name1: " << name_ty->sym_->Name()
-                  << " Name2: " << (*iter)->name_->Name() << std::endl;
+             typeid(*(ty_ty))== typeid(type::NameTy)) {
+        type::NameTy* name_ty = (type::NameTy*) ty_ty;
+        std::cout << " Name2: " << (*iter)->name_->Name() << " Name1: " << name_ty->sym_->Name()
+                  << std::endl;
         if (name_ty->sym_->Name() == (*iter)->name_->Name()) {
           errormsg->Error(pos_, "illegal type cycle");
           cycle = true;
@@ -540,9 +507,8 @@ void TypeDec::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv, int labelcount,
         ty_ty = name_ty->ty_;
       };
     };
-    if (cycle)
-      break;
-  }
+    if (cycle) break;
+  };
   std::cout << "Finish RETURN!!!!" << std::endl;
   return;
 }
