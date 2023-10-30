@@ -10,6 +10,7 @@ namespace A {
     Table *A::CompoundStm::Interp(Table *t) const {
         Table *tmp = stm1->Interp(t);
         return stm2->Interp(tmp);
+
     }
 
     int A::AssignStm::MaxArgs() const {
