@@ -167,40 +167,7 @@ type::Ty *RecordExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
     errormsg->Error(pos_,"undefined type "+typ_->Name());
     return type::NilTy::Instance();
   }
-//  if(!fields_){
-//    errormsg->Error(pos_,"None field_");
-//    return type::NilTy::Instance();
-//  }
-//  std::cout<<1<<std::endl;
-//  auto field = fields_->GetList().begin();
-//  std::cout<<2<<std::endl;
-//  if(!((type::RecordTy *)ty)->fields_){
-//    std::cout<<20<<std::endl;
-//    errormsg->Error(pos_,"None type field_");
-//    return type::NilTy::Instance();
-//  }
-//  auto record_list = ((type::RecordTy *)ty)->fields_->GetList();
-//  std::cout<<3<<std::endl;
-//  if(record_list.empty()){
-//    std::cout<<"No record list. "<<std::endl;
-//  }
-//  auto record = record_list.begin();
-//  std::cout<<"Get field "<<std::endl;
-//  //The field names and types of the record expression must match
-//  //    those of the named type, in the order given.
-//  for(;field!=fields_->GetList().end()&&record!=record_list.end();field++,record++){
-//    //check name
-//    if((*field)->name_->Name()!= (*record)->name_->Name()){
-//    errormsg->Error(pos_,"Record type unmatched");
-//    }
-//    else{
-//      type::Ty *exp_type = (*field)->exp_->SemAnalyze(venv,tenv,labelcount,errormsg);
-//      if(exp_type&&(*record)->ty_->ActualTy()&&typeid(exp_type->ActualTy())!=typeid((*record)->ty_->ActualTy())){
-//        errormsg->Error(pos_, "field init expression is not matched to the type defined.");
-//      };
-//    }
-//  }
-//  return ty;
+
   return ty;
 }
 
@@ -268,7 +235,6 @@ type::Ty *IfExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
       return  body_type;
       }
       else{
-      std::cout<< typeid(*(body_type->ActualTy())).name()<<"    "<<typeid(*(else_type->ActualTy())).name()<<std::endl;
       errormsg->Error(pos_, "then exp and else exp type mismatch");
       return type::VoidTy::Instance();
       }
@@ -288,7 +254,7 @@ type::Ty *WhileExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
   if(!body_)
     result = type::NilTy::Instance();
   else
-    result = body_->SemAnalyze(venv,tenv,labelcount,errormsg);
+    result = body_->SemAnalyze(venv,tenv,labelcount+1,errormsg);
   if (typeid(*(result->ActualTy()))!= typeid(type::VoidTy))
     errormsg->Error(body_->pos_, "while body must produce no value");
   venv->EndScope();
@@ -310,7 +276,7 @@ type::Ty *ForExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
   if(!body_)
     result = type::VoidTy::Instance();
   else
-    result = body_->SemAnalyze(venv,tenv,labelcount,errormsg);
+    result = body_->SemAnalyze(venv,tenv,labelcount+1,errormsg);
   venv->EndScope();
   tenv->EndScope();
   return result;
@@ -320,7 +286,7 @@ type::Ty *BreakExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
                                int labelcount, err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab4 code here */
   if(labelcount <= 0){
-    errormsg->Error(pos_,"No loop to break.");
+    errormsg->Error(pos_,"break is not inside any loop.");
   }
     return type::NilTy::Instance();
 }
@@ -354,9 +320,9 @@ type::Ty *ArrayExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
     type::Ty *array_type = tenv->Look(typ_)->ActualTy();
     type::Ty *init_element_type = init_->SemAnalyze(venv, tenv, labelcount, errormsg);
     size_->SemAnalyze(venv,tenv,labelcount,errormsg);
-    if(((type::ArrayTy*)array_type)->ty_&&((type::ArrayTy*)array_type)->ty_->IsSameType(init_element_type)
+    if(((type::ArrayTy*)array_type)->ty_&&!((type::ArrayTy*)array_type)->ty_->IsSameType(init_element_type)
         ){
-//      errormsg->Error(pos_,"type mismatch");
+     errormsg->Error(pos_,"type mismatch");
     }
     return array_type;
   }
@@ -371,27 +337,7 @@ type::Ty *VoidExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
 void FunctionDec::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
                              int labelcount, err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab4 code here */
-//  //找到第一个function
-//  absyn::FunDec *funDec = functions_->GetList().front();
-//  //参数
-//  absyn::FieldList *params = funDec->params_;
-//  //查找结果类型
-//
-//  type::Ty *result_ty = tenv->Look(funDec->result_);
-//
-//  type::TyList *formalTyList = params->MakeFormalTyList(tenv,errormsg);
-//
-//  venv->Enter(funDec->name_,new env::FunEntry(formalTyList,result_ty));
-//  venv->BeginScope();
-//  //formal_it:全局拥有的List;param_it:function拥有的变量类型list
-//  auto formal_it = formalTyList->GetList().begin();
-//  auto param_it = params->GetList().begin();
-//  for(;param_it!=params->GetList().end();formal_it++,param_it++){
-//    venv->Enter((*param_it)->name_,new env::VarEntry(*formal_it));
-//  }
-//  type::Ty *ty;
-//  ty=funDec->body_->SemAnalyze(venv,tenv,labelcount,errormsg);
-//  venv->EndScope();
+
   const std::list<FunDec *> * function_list = &functions_->GetList();
   for (auto iter = function_list->begin(); iter != function_list->end(); iter++) {
     auto next_iter = iter;
