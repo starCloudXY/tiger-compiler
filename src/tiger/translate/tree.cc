@@ -218,5 +218,8 @@ RelOp Commute(RelOp r) {
     assert(false);
   }
 }
+MemExp *NewMemPlus_Const(Exp *left, int right){
+  return new MemExp(new BinopExp(BinOp::PLUS_OP, left, new ConstExp(right)));
+};
 
 } // namespace tree

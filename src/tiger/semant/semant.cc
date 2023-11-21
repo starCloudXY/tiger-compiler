@@ -368,6 +368,7 @@ void FunctionDec::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
     if (!body_ty->IsSameType(dec_ty)) {
       if (typeid(*dec_ty) == typeid(type::VoidTy)) errormsg->Error((*iter)->body_->pos_, "procedure returns value");
       else errormsg->Error((*iter)->body_->pos_, "return type mismatch");
+
     };
     venv->EndScope();
   };

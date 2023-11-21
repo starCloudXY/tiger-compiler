@@ -19,7 +19,7 @@ private:
   int label_id_ = 0;
   static LabelFactory label_factory;
 };
-
+//Temporaries
 class Temp {
   friend class TempFactory;
 

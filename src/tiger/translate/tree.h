@@ -50,8 +50,8 @@ enum RelOp {
   EQ_OP,
   NE_OP,
   LT_OP,
-  GT_OP,
   LE_OP,
+  GT_OP,
   GE_OP,
   ULT_OP,
   ULE_OP,
@@ -236,7 +236,7 @@ public:
 private:
   std::list<Exp *> exp_list_;
 };
-
+MemExp *NewMemPlus_Const(Exp *left, int right);
 } // namespace tree
 
 #endif // TIGER_TRANSLATE_TREE_H_

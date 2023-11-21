@@ -1,6 +1,7 @@
 #ifndef TIGER_FRAME_FRAME_H_
 #define TIGER_FRAME_FRAME_H_
 
+#include <iostream>
 #include <list>
 #include <memory>
 #include <string>
@@ -11,6 +12,7 @@
 namespace frame {
 
 class RegManager {
+
 public:
   RegManager() : temp_map_(temp::Map::Empty()) {}
 
@@ -64,18 +66,31 @@ public:
   temp::Map *temp_map_;
 protected:
   std::vector<temp::Temp *> regs_;
+
 };
 
 class Access {
 public:
   /* TODO: Put your lab5 code here */
-  
+  int offset;
+  temp::Temp *reg;
+  virtual tree::Exp *ToExp(tree::Exp *frame_ptr) const = 0;
   virtual ~Access() = default;
   
 };
 
 class Frame {
   /* TODO: Put your lab5 code here */
+  //extracts a list of k “accesses”
+  // denoting the locations where the formal parameters will be kept at run time as seen from inside the callee
+public:
+  temp::Label *label;
+  std::list <frame::Access *> formals_;
+  int offset;
+  Frame(){};
+  Frame(temp::Label *name,std::list<bool> *escapes):label(name){};
+  virtual frame::Access *allocLocal(bool escape) = 0;
+
 };
 
 /**
@@ -107,7 +122,9 @@ public:
 class Frags {
 public:
   Frags() = default;
-  void PushBack(Frag *frag) { frags_.push_back(frag); }
+  void PushBack(Frag *frag) {
+    std::cout<<"pushing back\n";
+    frags_.push_back(frag); }
   const std::list<Frag*> &GetList() { return frags_; }
 
 private:
@@ -115,7 +132,7 @@ private:
 };
 
 /* TODO: Put your lab5 code here */
-
+tree::Exp *externalCall(std::string s, tree::ExpList *args);
 } // namespace frame
 
 #endif
