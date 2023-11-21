@@ -142,18 +142,16 @@ void ProgTr::Translate() {
   temp::Label *main_label = temp::LabelFactory::NamedLabel("main");
   main_level_ = std::make_unique<tr::Level>(Outermost());
   Level *mainframe = main_level_.get();
-  FillBaseVEnv();
   FillBaseTEnv();
-  ExpAndTy *main_exp = absyn_tree_->Translate(venv_.get(),tenv_.get(),mainframe,main_label,errormsg_.get())  ;
-  ////
-
+  FillBaseVEnv();
+  absyn_tree_->Translate(venv_.get(),tenv_.get(),main_level_.get(),main_label,errormsg_.get());
 }
 
 } // namespace tr
 
 namespace absyn {
 static type::TyList *make_formal_tylist(env::TEnvPtr tenv, FieldList *params) {
-  std::cout<<"making make_formal_tylis list \n";
+  std::cout<<"making list in  \n";
   auto result = new type::TyList();
   if (params){
     for (Field * param : params->GetList()) {
@@ -161,8 +159,8 @@ static type::TyList *make_formal_tylist(env::TEnvPtr tenv, FieldList *params) {
       if (param->typ_) ty = tenv->Look(param->typ_);
       result->Append(ty);
     }
-
   }
+  std::cout<<"finish return list\n";
   return result;
 }
 std::list<bool> *make_formal_esclist(absyn::FieldList *params) {
@@ -172,6 +170,7 @@ std::list<bool> *make_formal_esclist(absyn::FieldList *params) {
       result->push_back(param->escape_);
     }
   }
+  std::cout<<"finish return formal list\n";
   return result;
 }
 tr::ExpAndTy *AbsynTree::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
@@ -181,17 +180,58 @@ tr::ExpAndTy *AbsynTree::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
     return root_->Translate(venv,tenv,level,label,errormsg);
 }
 tree::Exp *StaticLink(tr::Level *target, tr::Level *level) {
+
     tree::Exp *staticlink = new tree::TempExp(reg_manager->FramePointer());
-    while(level != target){
-    frame::Access * sl = level->frame_->formals_.back();
-    staticlink = sl->ToExp(staticlink);
-    level = level->parent_;
+    std::cout<<"linking exp!!!!!!!!!!!!\n";
+    if(level== nullptr){
+    std::cout<<"ln+++++1!!!!!!!!!!!!\n";
     }
+    if(target== nullptr){
+    std::cout<<"tn+++++1!!!!!!!!!!!!\n";
+    }
+    if(level->frame_== nullptr){
+    std::cout<<"lfream+++++1!!!!!!!!!!!!\n";
+    }
+    while(level!= nullptr&&level != target){
+    std::cout<<"Level\n";
+
+    frame::Access *sl = level->frame_->formals_.back();
+    if(sl != nullptr)staticlink = sl->ToExp(staticlink);
+    level = level->parent_;
+    std::cout<<"get ~~~\n";
+
+    }
+    std::cout<<"finish~~~\n";
     return staticlink;
 }
 tr::Exp *TranslateSimpleVar(tr::Access *access, tr::Level *level) {
+    std::cout<<"translating!!!!!!!!!!!!\n";
     tree::Exp *real_fp = StaticLink(access->level_, level);
-    return new tr::ExExp(access->access_->ToExp(real_fp));
+    std::cout<<"translating finish!!!!!!!!!!!!\n";
+
+    if(access == nullptr){
+    std::cout<<"no accesss!\n";
+    }
+    std::cout<<"1\n";
+    if(access->access_== nullptr){
+    std::cout<<"no accesssdiajdasds!\n";
+    }
+    std::cout<<"2\n";
+    if(!real_fp){
+    std::cout<<"no real fps!\n";
+    }
+    else {
+//    tree::Exp *result = access->access_->ToExp(real_fp);
+    frame::Access *step_1 = access->access_;
+    std::cout<<"aiuweqwuheiquwhe!\n";
+    if(step_1== nullptr){
+      std::cout<<"no accesssdiajdasds!\n";
+    }
+    tree::Exp *result = step_1->ToExp(real_fp);
+    std::cout<<"rettttttttt!\n";
+    return new tr::ExExp(result);
+    }
+
 }
 
 tr::Exp *TranslateAssignExp(tr::Exp *var, tr::Exp *exp) {
@@ -208,7 +248,13 @@ tr::ExpAndTy *SimpleVar::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
     if(entry&&(typeid(*entry) == typeid(env::VarEntry))){
     auto varEntry = dynamic_cast<env::VarEntry *>(entry);
     std::cout<<"~~~~~~ entry finish : "<<sym_->Name()<<std::endl;
-    return new tr::ExpAndTy(TranslateSimpleVar(varEntry->access_,level),varEntry->ty_->ActualTy());
+    auto exp = TranslateSimpleVar(varEntry->access_,level);
+    std::cout<<"~~~~~~ Translate finish : "<<sym_->Name()<<std::endl;
+    if(!varEntry->ty_){
+      errormsg->Error(pos_,"aaaaaaaaaa no type!!!!!!");
+      return new tr::ExpAndTy(exp,varEntry->ty_->ActualTy());
+    }
+    return new tr::ExpAndTy(exp,varEntry->ty_->ActualTy());
     }
     else{
     errormsg->Error(pos_, "undefined variable %s", sym_->Name().c_str());
@@ -265,7 +311,9 @@ tr::ExpAndTy *VarExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
                                 err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab5 code here */
     std::cout<<"~~~~~~ var check"<<std::endl;
-    return var_->Translate(venv, tenv, level, label, errormsg);
+    tr::ExpAndTy *result = var_->Translate(venv, tenv, level, label, errormsg);
+    std::cout<<"~~~~~~ var check finish"<<std::endl;
+    return result;
 }
 
 tr::ExpAndTy *NilExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
@@ -332,8 +380,11 @@ tr::ExpAndTy *OpExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
   /* TODO: Put your lab5 code here */
   std::cout<<"~~~~~~~~~~~~~ op check~·········"<<std::endl;
   tr::ExpAndTy *leftExpAndTy = left_->Translate(venv,tenv,level,label,errormsg);
+  std::cout<<"A\n";
   tr::ExpAndTy *rightExpAndTy = right_->Translate(venv,tenv,level,label,errormsg);
+  std::cout<<"b\n";
   tree::Exp *leftExp = leftExpAndTy->exp_->UnEx();
+  std::cout<<"c\n";
   tree::Exp *rightExp = rightExpAndTy->exp_->UnEx();
   tr::Exp *exp = nullptr;
   std::cout<<"finishing\n";
@@ -348,10 +399,10 @@ tr::ExpAndTy *OpExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
       std::cout<<"begin op  check"<<std::endl;
       op = tree::BinOp(oper_-PLUS_OP+tree::PLUS_OP);
       std::cout<<op<<std::endl;
-      if (typeid(leftExpAndTy->ty_->ActualTy())!= typeid(type::IntTy))
-        errormsg->Error(left_->pos_, "integer required");
-      if (typeid(rightExpAndTy->ty_->ActualTy())!= typeid(type::IntTy))
-        errormsg->Error(right_->pos_, "integer required");
+      if (!leftExpAndTy->ty_->IsSameType(type::IntTy::Instance()))
+        errormsg->Error(left_->pos_, "left integer required");
+      if (!rightExpAndTy->ty_->IsSameType(type::IntTy::Instance()))
+        errormsg->Error(right_->pos_, "right integer required");
       exp = new tr::ExExp(new tree::BinopExp(op,leftExpAndTy->exp_->UnEx(),rightExpAndTy->exp_->UnEx()));
       break;
   }
@@ -603,6 +654,7 @@ tr::ExpAndTy *LetExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
                                 tr::Level *level, temp::Label *label,
                                 err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab5 code here */
+  std::cout<<"let checking1!!!!!!!!!\n";
   tr::Exp *exp = nullptr;
 
   static bool first = true;
@@ -621,7 +673,9 @@ tr::ExpAndTy *LetExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
   int count = 0;
   for (Dec* dec : decs_->GetList()) {
   if (count == 0) {
+
         stm = dec->Translate(venv, tenv, level, label, errormsg)->UnNx();
+        if(stm )std::cout<<"cheching dec \n";
   }
   else {
         stm = new tree::SeqStm(stm, dec->Translate(venv,tenv,level,label, errormsg)->UnNx());
@@ -670,14 +724,18 @@ tr::Exp *FunctionDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
                                 err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab5 code here */
   for (FunDec *fundec : functions_->GetList()) {
+  std::cout<<"adding~~~~~~~~~~~  "<<fundec->name_->Name()<<"\n";
   if(!fundec){
         errormsg->Error(pos_,"no fundec!!!!!!!!");
         return nullptr;
   }
   type::TyList *formal_types = make_formal_tylist(tenv, fundec->params_);
-
-  tr::Level *new_level = tr::Level::NewLevel(level, fundec->name_, make_formal_esclist(fundec->params_));
-
+  std::cout<<"sadsada~~~~~~~~  "<<"\n";
+  tr::Level *new_level = tr::Level::NewLevel(
+      level,
+      fundec->name_,
+      make_formal_esclist(fundec->params_));
+  std::cout<<"sdfsdfsdf~~~~~~~  "<<"\n";
   if(!fundec->result_){
         venv->Enter(fundec->name_, new env::FunEntry(new_level, fundec->name_, formal_types, type::VoidTy::Instance()));
   }
@@ -687,7 +745,7 @@ tr::Exp *FunctionDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
   }
   }
   for (FunDec *fundec : functions_->GetList()) {
-  std::cout<<"checking~~~~~~~~~~~ "<<fundec->name_->Name()<<"\n";
+  std::cout<<"checking~~~~~~~~~~~  "<<fundec->name_->Name()<<"\n";
   venv->BeginScope();
   if(!venv->Look(fundec->name_)){
         errormsg->Error(pos_,fundec->name_->Name()+"undefined !!!!!!!");
@@ -750,10 +808,15 @@ tr::Exp *VarDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
                            tr::Level *level, temp::Label *label,
                            err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab5 code here */
+ std::cout<<"translating  ";
+
+ std::cout<<var_->Name()<<std::endl;
   tr::ExpAndTy *check_init = init_->Translate(venv,tenv,level,label, errormsg);
+
   tr::Access *access;
   access = tr::Access::AllocLocal(level, true);
   venv->Enter(var_, new env::VarEntry(access, check_init->ty_));
+
   return TranslateAssignExp(TranslateSimpleVar(access, level), check_init->exp_);
 }
 

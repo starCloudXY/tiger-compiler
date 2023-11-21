@@ -236,7 +236,7 @@ public:
 private:
   std::list<Exp *> exp_list_;
 };
-MemExp *NewMemPlus_Const(Exp *left, int right);
+
 } // namespace tree
 
 #endif // TIGER_TRANSLATE_TREE_H_

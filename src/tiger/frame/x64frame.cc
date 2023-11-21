@@ -9,14 +9,19 @@ tree::Exp *externalCall( std::string s, tree::ExpList *args) {
 }
 class InFrameAccess : public Access {
 public:
-  int offset;
+  int offset = 8;
   explicit InFrameAccess(int offset) : offset(offset) {
     assert(offset<0);
   }
   /* TODO: Put your lab5 code here */
   //save in memory
   tree::Exp *ToExp(tree::Exp *frame_ptr) const override{
-    return new tree::MemExp(frame_ptr);
+    std::cout<<"to mem exp\n";
+    return new tree::MemExp(
+        new tree::BinopExp(
+            tree::BinOp::PLUS_OP,
+            frame_ptr,
+            new tree::ConstExp(offset)));
   }
 };
 
@@ -28,6 +33,7 @@ public:
   explicit InRegAccess(temp::Temp *reg) : reg(reg) {}
   /* TODO: Put your lab5 code here */
   tree::Exp *ToExp(tree::Exp *frame_ptr) const override{
+    std::cout<<"to reg exp dddd\n";
     return new tree::TempExp(reg);
   }
 };
@@ -37,19 +43,25 @@ X64Frame::X64Frame(temp::Label *name, std::list<bool> *escapes) {
   label = name;
   offset = -reg_manager->WordSize();
   formals_ = std::list<frame::Access*>();
+  std::cout<<" Adding label : "<<name->Name()<<std::endl;
   if(escapes){
-    for (bool escape:*escapes){
+    for (bool escape : *escapes){
+      std::cout<<"adding escape "<<escape<<std::endl;
       formals_.push_back(allocLocal(escape));
     }
   }
 };
 Access *X64Frame::allocLocal(bool escape) {
     if(escape){
-        auto newAccess = new InFrameAccess(offset);
+    std::cout<<"allocate true escape in mem\n";
+      auto newAccess = new InFrameAccess(offset);
       offset -=reg_manager->WordSize();
-  return newAccess;
+      return newAccess;
     }
-      else return new InRegAccess(temp::TempFactory::NewTemp());
+    else{
+      std::cout<<"allocate reg escape in \n";
+      return new InRegAccess(temp::TempFactory::NewTemp());
+    }
 
 };
 //tree::Stm *procEntryExit_fs(frame::Frame *frame, tree::Stm *stm) {
