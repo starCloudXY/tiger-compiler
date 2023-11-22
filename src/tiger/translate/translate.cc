@@ -183,9 +183,6 @@ tree::Exp *StaticLink(tr::Level *target, tr::Level *level) {
 
     tree::Exp *staticlink = new tree::TempExp(reg_manager->FramePointer());
     std::cout<<"linking exp!!!!!!!!!!!!\n";
-    if(level== nullptr){
-    std::cout<<"ln+++++1!!!!!!!!!!!!\n";
-    }
     if(target== nullptr){
     std::cout<<"tn+++++1!!!!!!!!!!!!\n";
     }
@@ -205,31 +202,26 @@ tree::Exp *StaticLink(tr::Level *target, tr::Level *level) {
     return staticlink;
 }
 tr::Exp *TranslateSimpleVar(tr::Access *access, tr::Level *level) {
-    std::cout<<"translating!!!!!!!!!!!!\n";
     tree::Exp *real_fp = StaticLink(access->level_, level);
-    std::cout<<"translating finish!!!!!!!!!!!!\n";
 
     if(access == nullptr){
     std::cout<<"no accesss!\n";
     }
-    std::cout<<"1\n";
-    if(access->access_== nullptr){
-    std::cout<<"no accesssdiajdasds!\n";
-    }
-    std::cout<<"2\n";
-    if(!real_fp){
-    std::cout<<"no real fps!\n";
+    if(access->access_== nullptr) {
+    std::cout << "no accesssdiajdasds!'";}
+    if (real_fp == nullptr) {
+      std::cout << "no real fps!\n";
     }
     else {
-//    tree::Exp *result = access->access_->ToExp(real_fp);
-    frame::Access *step_1 = access->access_;
-    std::cout<<"aiuweqwuheiquwhe!\n";
-    if(step_1== nullptr){
-      std::cout<<"no accesssdiajdasds!\n";
-    }
-    tree::Exp *result = step_1->ToExp(real_fp);
-    std::cout<<"rettttttttt!\n";
-    return new tr::ExExp(result);
+      //    tree::Exp *result = access->access_->ToExp(real_fp);
+      frame::Access *step_1 = access->access_;
+      if(step_1 == nullptr){
+            std::cout<<"no frame access\n";}
+      tree::Exp *res = nullptr;
+      std::cout<<"making res\n"<<step_1->reg<<"\n";
+      res = step_1->ToExp(real_fp);
+      std::cout << "rettttttttt!\n";
+      return new tr::ExExp(res);
     }
 
 }
