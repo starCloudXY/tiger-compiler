@@ -60,24 +60,22 @@ public:
   /* TODO: Put your lab5 code here */
   Level() = default;
   Level(frame::Frame *frame_, Level *parent_):frame_(frame_),parent_(parent_){
-    if(frame_)
-      if(frame_->label)
-    std::cout<<"Add lable !!!!!!!!!!!!!!!: "<<frame_->label->Name()<<std::endl;
-      else std::cout<<"create an empty frame. \n";
   }
   std::list<Access> *Formals (Level *level){
-
     return nullptr;
   }
   static Level *NewLevel(Level *parent,temp::Label *name,std::list<bool> *formals){
       std::cout<<"pushing level with name "<<name->Name()<<" \n";
+      ////why?
       formals->push_back(true);
       int count = 0;
       for(bool &formal:*formals){
-        count++;
         if(count>=6){
           formal = true;
         }
+        std::cout<<count<<"-"<<formal<<"    " ;
+
+        count++;
       }
       return new Level(new frame::X64Frame(name,formals),parent);
   };

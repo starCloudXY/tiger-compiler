@@ -29,6 +29,7 @@ public:
     r15 = temp::TempFactory::NewTemp();
     rbp = temp::TempFactory::NewTemp();
     rsp = temp::TempFactory::NewTemp();
+    fp = temp::TempFactory::NewTemp();
     caller_save_reg = new temp::TempList({rax,rdi,rsi,rdx,rcx,r8,r9,r10,r11});
     callee_save_reg = new temp::TempList({rbx,rbp,r12,r13,r14,r15});
     registers = new temp::TempList({rax, rdi, rsi, rdx, rcx, r8, r9,
@@ -54,7 +55,7 @@ public:
 public:
 
   // caller-saved registers
-  temp::Temp *rax,*rdi,*rsi,*rdx,*rcx,*r8,*r9,*r10,*r11;
+  temp::Temp *rax,*rdi,*rsi,*rdx,*rcx,*r8,*r9,*r10,*r11,*fp;
   // caller-saved registers
   temp::Temp *rbx,*rbp,*rsp,*r12,*r13,*r14,*r15;
   temp::Map *temp_map_ = nullptr;
@@ -81,24 +82,33 @@ public:
   };
 
   temp::Temp *FramePointer()override{
-      return rbp;
+      return fp;
   };
   temp::Temp *StackPointer()override{
       return rsp;
   };
   temp::Temp *ReturnValue()override{
-      std::cout<<"Returnning raxx\n";
+      std::cout<<"            Returning rax\n";
       return rax;
   };
-
+  temp::Temp *ARG_nth(int num) override {
+      switch (num) {
+      case 1: return rdi;
+      case 2: return rsi;
+      case 3: return rdx;
+      case 4: return rcx;
+      case 5: return r8;
+      case 6: return r9;
+      default: return nullptr;
+      }
+  }
 };
 class X64Frame : public Frame {
   /* TODO: Put your lab5 code here */
+public:
   temp::Label *label;
   std::list<frame::Access *> formals_;
   int offset;
-
-public:
   X64Frame(temp::Label *name, std::list<bool> *escapes);
   Access *allocLocal(bool escape) override;
 };

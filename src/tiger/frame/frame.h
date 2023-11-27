@@ -62,7 +62,7 @@ public:
   [[nodiscard]] virtual temp::Temp *StackPointer() = 0;
 
   [[nodiscard]] virtual temp::Temp *ReturnValue() = 0;
-
+  [[nodiscard]] virtual temp::Temp *ARG_nth(int num) = 0;
   temp::Map *temp_map_;
 protected:
   std::vector<temp::Temp *> regs_;
@@ -133,6 +133,7 @@ private:
 
 /* TODO: Put your lab5 code here */
 tree::Exp *externalCall(std::string s, tree::ExpList *args);
+tree::Stm *procEntryExit_fp(frame::Frame *frame, tree::Stm *stm);
 } // namespace frame
 
 #endif

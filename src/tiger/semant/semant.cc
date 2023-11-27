@@ -57,6 +57,7 @@ type::Ty *SubscriptVar::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
                                    err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab4 code here */
   type::Ty *variable_type = var_->SemAnalyze(venv,tenv,labelcount,errormsg);
+
   if(variable_type== nullptr){
     errormsg->Error(pos_,"variable not defined");
     return type::NilTy::Instance();
@@ -382,7 +383,7 @@ void VarDec::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv, int labelcount,
 //                      if the type of exp is NilTy,
 //                  type_id must be a RecordTy type
 //                      var a : my_record := nil
-  std::cout<<"VarDec check"<<std::endl;
+  std::cout<<"VarDec check:"<<std::endl;
   type::Ty *exp_ty = init_->SemAnalyze(venv, tenv, labelcount, errormsg);
 
   if (typ_ == nullptr) {
@@ -397,8 +398,7 @@ void VarDec::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv, int labelcount,
       std::cout<<"exp_ty is nullptr."<<std::endl;
     }
     if(typeid(*(exp_ty->ActualTy()))== typeid(type::NilTy)){
-      std::cout<<"check Record Ty"<<std::endl;
-      std::cout<<"Look tenv!"<<std::endl;
+      std::cout<<"    check Record Ty"<<std::endl;
       if(type_ty&&typeid(*(type_ty->ActualTy()))!= typeid(type::RecordTy))
         errormsg->Error(pos_, "init should not be nil without type specified");
     }

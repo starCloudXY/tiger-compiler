@@ -15,7 +15,7 @@ void AbsynTree::Traverse(esc::EscEnvPtr env) {
 
 void SimpleVar::Traverse(esc::EscEnvPtr env, int depth) {
   /* TODO: Put your lab5 code here */
-  std::cout<<"check SimpleVar\n";
+  std::cout<<"check SimpleVar :   "<<sym_->Name()<<"      Address of env : "<<&(env)<<"\n";
   esc::EscapeEntry *entry = env->Look(sym_);
   if (entry == nullptr)
     return;
@@ -115,7 +115,9 @@ void BreakExp::Traverse(esc::EscEnvPtr env, int depth) {
 
 void LetExp::Traverse(esc::EscEnvPtr env, int depth) {
   /* TODO: Put your lab5 code here */
+  std::cout<<"let traverse: "<<std::endl;
   for (Dec *dec:decs_->GetList()) {
+    std::cout<<"==begin : "<<dec->pos_<<"   "<<&(dec)<<std::endl;
     dec->Traverse(env, depth);
   }
   body_->Traverse(env, depth);
@@ -138,7 +140,11 @@ void FunctionDec::Traverse(esc::EscEnvPtr env, int depth) {
     for(Field *field:funDec->params_->GetList()) {
       field->escape_ = false;
       env->Enter(field->name_, new esc::EscapeEntry(depth + 1, &field->escape_));
-      std::cout<<"field name  "<<field->name_->Name()<<std::endl;
+      std::cout<<"     Address of env : "<<&(env)<<std::endl;
+      esc::EscapeEntry  *entry__ = env->Look(field->name_);
+      std::cout<<"field name  "<<field->name_->Name()<<" with type "<<field->typ_->Name()<<std::endl;
+      std::cout<<"         ===>Address of entry:  "<<&(entry__);
+      std::cout<<"    depth: "<<entry__->depth_<<" "<<entry__->escape_<<std::endl;
     }
     funDec->body_->Traverse(env, depth + 1);
   }
@@ -147,7 +153,9 @@ void FunctionDec::Traverse(esc::EscEnvPtr env, int depth) {
 void VarDec::Traverse(esc::EscEnvPtr env, int depth) {
   /* TODO: Put your lab5 code here */
   escape_ = false;
+  std::cout<<" enter Var   "<<var_->Name()<<"\n";
   env->Enter(var_,new esc::EscapeEntry(depth,&escape_));
+
   init_->Traverse(env,depth);
 }
 
