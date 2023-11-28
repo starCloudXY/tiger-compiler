@@ -321,7 +321,8 @@ type::Ty *ArrayExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
     type::Ty *init_element_type = init_->SemAnalyze(venv, tenv, labelcount, errormsg);
     size_->SemAnalyze(venv,tenv,labelcount,errormsg);
     if(((type::ArrayTy*)array_type)->ty_&&!((type::ArrayTy*)array_type)->ty_->IsSameType(init_element_type)
-        ){
+        )
+    {
      errormsg->Error(pos_,"type mismatch");
     }
     return array_type;

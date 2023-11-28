@@ -239,7 +239,6 @@ tr::ExpAndTy *FieldVar::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
 
     type::FieldList *fieldList = (dynamic_cast<type::RecordTy*>(actual_ty))->fields_;
     type::ArrayTy *array_field = (dynamic_cast<type::ArrayTy*>(actual_ty));
-    
     int order = 0 ;
     for(type::Field *field:fieldList->GetList()){
       if(field->name_->Name()==sym_->Name()){
@@ -261,6 +260,7 @@ tr::ExpAndTy *SubscriptVar::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
                                       tr::Level *level, temp::Label *label,
                                       err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab5 code here */
+
     tr::ExpAndTy *check_var = var_->Translate(venv,tenv,level,label,errormsg);
 
     if(!subscript_){
@@ -268,7 +268,7 @@ tr::ExpAndTy *SubscriptVar::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
     }
     tr::ExpAndTy *check_subscript = subscript_->Translate(venv,tenv,level,label,errormsg);
     type::Ty *var_type = check_var->ty_;
-    if (typeid(*var_type) == typeid(type::ArrayTy)) {
+    if (typeid(*var_type->ActualTy()) == typeid(type::ArrayTy)) {
       // a[i] is MEM(+(MEM(e), *(i, CONST w))
       tr::Exp *exp = new tr::ExExp(
     new tree::MemExp(
@@ -284,7 +284,7 @@ tr::ExpAndTy *SubscriptVar::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
           (dynamic_cast<type::ArrayTy *>(var_type)->ty_->ActualTy()));
     }
     else {
-      errormsg->Error(pos_, "array type required");
+      errormsg->Error(pos_, typeid(*var_type).name());
       return new tr::ExpAndTy(nullptr,type::VoidTy::Instance());
     }
 }
@@ -754,12 +754,19 @@ tr::ExpAndTy *ArrayExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
   type::Ty *ty = tenv->Look(typ_)->ActualTy();
   tr::ExpAndTy *check_size = size_->Translate(venv, tenv, level, label, errormsg);
   tr::ExpAndTy *check_init = init_->Translate(venv, tenv, level, label, errormsg);
-
+  type::Ty *size_ty = check_size->ty_;
+  type::Ty *init_ty = check_init->ty_;
+  type::Ty *array_ty = dynamic_cast<type::ArrayTy *>(ty)->ty_;
   auto *expList = new tree::ExpList();
   expList->Append(check_size->exp_->UnEx());
   expList->Append(check_init->exp_->UnEx());
-  tr::Exp *exp = new tr::ExExp(frame::externalCall("init_array", expList));
-  return new tr::ExpAndTy(exp, ty);
+  temp::Temp *r = temp::TempFactory::NewTemp();
+  tree::EseqExp *exp = new tree::EseqExp(
+      new tree::MoveStm(new tree::TempExp(r),
+                        frame::externalCall("init_array", expList)),
+      new tree::TempExp(r));
+  return new tr::ExpAndTy(new tr::ExExp(exp), ty->ActualTy());
+//  return new tr::ExpAndTy(exp, ty);
 }
 
 tr::ExpAndTy *VoidExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
@@ -884,12 +891,12 @@ tr::Exp *VarDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
                            tr::Level *level, temp::Label *label,
                            err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab5 code here */
+
   tr::ExpAndTy *check_init = init_->Translate(venv,tenv,level,label, errormsg);
 
   tr::Access *access;
   access = tr::Access::AllocLocal(level, true);
   venv->Enter(var_, new env::VarEntry(access, check_init->ty_));
-
   return TranslateAssignExp(TranslateSimpleVar(access, level), check_init->exp_);
 }
 
@@ -897,6 +904,7 @@ tr::Exp *TypeDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
                             tr::Level *level, temp::Label *label,
                             err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab5 code here */
+
   for (NameAndTy* current: types_->GetList()) {   // put all the name into the env first
   sym::Symbol *symbol = current->name_;
   tenv->Enter(symbol, new type::NameTy(symbol, nullptr));
@@ -906,8 +914,8 @@ tr::Exp *TypeDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
   type::NameTy *name_ty =
       dynamic_cast<type::NameTy *>(tenv->Look(type->name_));
   // modify the ty_ field of the type::NameTy class in the tenv for which is
-  // NULL now
   name_ty->ty_ = type->ty_->Translate(tenv, errormsg);
+
   // doesn't get type
   if (!name_ty->ty_) {
         errormsg->Error(pos_, "undefined type %s", type->name_);
@@ -924,6 +932,7 @@ tr::Exp *TypeDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
           return new tr::ExExp(new tree::ConstExp(0));
         }
         tmp = next;
+  }
   }
   for (NameAndTy *type : types_->GetList()) {
         // find name_ in tenv
@@ -953,7 +962,6 @@ tr::Exp *TypeDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
               temp::LabelFactory::NamedLabel(descriptor_label),
               descriptor_type_str));
         }
-  }
   }
   return new tr::ExExp(new tree::ConstExp(0));
 }
