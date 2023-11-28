@@ -88,7 +88,6 @@ public:
       return rsp;
   };
   temp::Temp *ReturnValue()override{
-      std::cout<<"            Returning rax\n";
       return rax;
   };
   temp::Temp *ARG_nth(int num) override {

@@ -123,7 +123,6 @@ class Frags {
 public:
   Frags() = default;
   void PushBack(Frag *frag) {
-    std::cout<<"pushing back\n";
     frags_.push_back(frag); }
   const std::list<Frag*> &GetList() { return frags_; }
 
