@@ -16,7 +16,7 @@ let
 			(dec2bin(num/2);
 			printi(num-num/2*2))
 	)
-    
+
     function try() = 
     (
     	printi(100);
