@@ -15,7 +15,6 @@ void AbsynTree::Traverse(esc::EscEnvPtr env) {
 
 void SimpleVar::Traverse(esc::EscEnvPtr env, int depth) {
   /* TODO: Put your lab5 code here */
-//  std::cout<<"check SimpleVar :   "<<sym_->Name()<<"      Address of env : "<<&(env)<<"\n";
   esc::EscapeEntry *entry = env->Look(sym_);
   if (entry == nullptr)
     return;

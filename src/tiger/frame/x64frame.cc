@@ -32,7 +32,6 @@ public:
   explicit InRegAccess(temp::Temp *reg) : reg(reg) {}
   /* TODO: Put your lab5 code here */
   tree::Exp *ToExp(tree::Exp *frame_ptr) const override{
-    std::cout<<"to reg exp dddd\n";
     return new tree::TempExp(reg);
   }
 };

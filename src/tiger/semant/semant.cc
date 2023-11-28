@@ -1,6 +1,6 @@
 #include "tiger/semant/semant.h"
 #include "tiger/absyn/absyn.h"
-#include <iostream>
+
 
 namespace absyn {
 
@@ -163,7 +163,6 @@ type::Ty *RecordExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
                                 int labelcount, err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab4 code here */
   type::Ty * ty = tenv->Look(typ_);
-  std::cout<<"Record type : "<<typ_->Name()<<std::endl;
   if(!ty){
     errormsg->Error(pos_,"undefined type "+typ_->Name());
     return type::NilTy::Instance();
@@ -383,7 +382,6 @@ void VarDec::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv, int labelcount,
 //                      if the type of exp is NilTy,
 //                  type_id must be a RecordTy type
 //                      var a : my_record := nil
-  std::cout<<"VarDec check:"<<std::endl;
   type::Ty *exp_ty = init_->SemAnalyze(venv, tenv, labelcount, errormsg);
 
   if (typ_ == nullptr) {
@@ -395,10 +393,8 @@ void VarDec::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv, int labelcount,
     type::Ty *type_ty = tenv->Look(typ_);
     if(exp_ty== nullptr){
       errormsg->Error(pos_, "init type is nullptr");
-      std::cout<<"exp_ty is nullptr."<<std::endl;
     }
     if(typeid(*(exp_ty->ActualTy()))== typeid(type::NilTy)){
-      std::cout<<"    check Record Ty"<<std::endl;
       if(type_ty&&typeid(*(type_ty->ActualTy()))!= typeid(type::RecordTy))
         errormsg->Error(pos_, "init should not be nil without type specified");
     }
@@ -421,7 +417,6 @@ void TypeDec::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv, int labelcount,
       if ((*next_iter)->name_ == (*iter)->name_)
         errormsg->Error(pos_, "two types have the same name");
     //type存成nullptr
-    std::cout<<(*iter)->name_->Name()<<std::endl;
     tenv->Enter((*iter)->name_, new type::NameTy((*iter)->name_, nullptr));
   };
 
@@ -438,14 +433,11 @@ void TypeDec::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv, int labelcount,
   const std::list<NameAndTy *> * ty_list = &types_->GetList();
   for (auto iter = ty_list->begin(); iter != ty_list->end(); iter++) {
     type::Ty* ty = tenv->Look((*iter)->name_);
-    std::cout<<typeid(*(ty)).name()<<std::endl;
     if (typeid(*(ty))== typeid(type::NameTy)) {
       type::Ty* ty_ty = ((type::NameTy*) ty)->ty_;
       while (ty_ty != nullptr &&
              typeid(*(ty_ty))== typeid(type::NameTy)) {
         type::NameTy* name_ty = (type::NameTy*) ty_ty;
-        std::cout << " Name2: " << (*iter)->name_->Name() << " Name1: " << name_ty->sym_->Name()
-                  << std::endl;
         if (name_ty->sym_->Name() == (*iter)->name_->Name()) {
           errormsg->Error(pos_, "illegal type cycle");
           cycle = true;
@@ -456,7 +448,7 @@ void TypeDec::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv, int labelcount,
     };
     if (cycle) break;
   };
-  std::cout << "Finish RETURN!!!!" << std::endl;
+
   return;
 }
 

@@ -65,7 +65,6 @@ public:
     return nullptr;
   }
   static Level *NewLevel(Level *parent,temp::Label *name,std::list<bool> *formals){
-      std::cout<<"pushing level with name "<<name->Name()<<" \n";
       ////why?
       formals->push_back(true);
       int count = 0;
@@ -73,8 +72,6 @@ public:
         if(count>=6){
           formal = true;
         }
-        std::cout<<count<<"-"<<formal<<"    " ;
-
         count++;
       }
       return new Level(new frame::X64Frame(name,formals),parent);

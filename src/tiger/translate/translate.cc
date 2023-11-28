@@ -1,6 +1,5 @@
 #include "tiger/translate/translate.h"
 
-#include <iostream>
 #include <tiger/absyn/absyn.h>
 
 #include "tiger/env/env.h"
@@ -97,7 +96,6 @@ public:
 
   [[nodiscard]] tree::Exp *UnEx() override {
     /* TODO: Put your lab5 code here */
-    std::cout<<"CU return\n";
     temp::Temp *r = temp::TempFactory::NewTemp();
     temp::Label *t = temp::LabelFactory::NewLabel();
     temp::Label *f = temp::LabelFactory::NewLabel();
@@ -156,17 +154,14 @@ static type::TyList *make_formal_tylist(env::TEnvPtr tenv, FieldList *params) {
       type::Ty *ty = nullptr;
       if (param->typ_) ty = tenv->Look(param->typ_);
       result->Append(ty);
-      std::cout<<"=======> Add field : "<<param->name_->Name()<<"  with type "<< typeid(ty->ActualTy()).name()<<std::endl;
     }
   }
   return result;
 }
 std::list<bool> *make_formal_esclist(absyn::FieldList *params) {
   auto result = new std::list<bool>();
-  std::cout<<"make formal esc list "<<std::endl;
   if(params) {
     for (Field * param : params->GetList()) {
-      std::cout<<param->name_->Name()<<" "<<param->escape_<<std::endl;
       result->push_back(param->escape_);
     }
   }
@@ -223,7 +218,6 @@ tr::ExpAndTy *FieldVar::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
                                   tr::Level *level, temp::Label *label,
                                   err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab5 code here */
-    std::cout<<"check field entry : "<<sym_->Name()<<std::endl;
     tr::ExpAndTy  *check_var = var_->Translate(venv,tenv,level,label,errormsg);
     if(check_var == nullptr){
     errormsg->Error(pos_,"no var");
@@ -236,7 +230,6 @@ tr::ExpAndTy *FieldVar::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
         nullptr);
     }
 
-    std::cout<<"check var and field \n";
     type::RecordTy *actual_ty = dynamic_cast<type::RecordTy *>(check_var->ty_->ActualTy());
 
     if(!actual_ty){
@@ -246,14 +239,9 @@ tr::ExpAndTy *FieldVar::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
 
     type::FieldList *fieldList = (dynamic_cast<type::RecordTy*>(actual_ty))->fields_;
     type::ArrayTy *array_field = (dynamic_cast<type::ArrayTy*>(actual_ty));
-    if(array_field)std::cout<< "array type:"<<typeid(array_field->ActualTy()).name()<<std::endl;
-
-    if(fieldList)
-    std::cout<<fieldList->GetList().size()<<std::endl;
-
+    
     int order = 0 ;
     for(type::Field *field:fieldList->GetList()){
-    std::cout<<"field var check field "<<field->name_->Name()<<"\n";
       if(field->name_->Name()==sym_->Name()){
         tr::Exp *exp = new tr::ExExp(
           new tree::MemExp(
@@ -273,7 +261,6 @@ tr::ExpAndTy *SubscriptVar::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
                                       tr::Level *level, temp::Label *label,
                                       err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab5 code here */
-    std::cout<<"~~~~~~ subscript check"<<std::endl;
     tr::ExpAndTy *check_var = var_->Translate(venv,tenv,level,label,errormsg);
 
     if(!subscript_){
@@ -314,7 +301,6 @@ tr::ExpAndTy *NilExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
                                 tr::Level *level, temp::Label *label,
                                 err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab5 code here */
-    std::cout<<"~~~~~~ nil check"<<std::endl;
     return new tr::ExpAndTy(new tr::ExExp(new tree::ConstExp(0)), type::NilTy::Instance());
 }
 
@@ -765,17 +751,14 @@ tr::ExpAndTy *ArrayExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
                                   tr::Level *level, temp::Label *label,
                                   err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab5 code here */
-  std::cout<<"translate array: "<<typ_->Name()<<std::endl;
   type::Ty *ty = tenv->Look(typ_)->ActualTy();
   tr::ExpAndTy *check_size = size_->Translate(venv, tenv, level, label, errormsg);
   tr::ExpAndTy *check_init = init_->Translate(venv, tenv, level, label, errormsg);
 
-  std::cout<<"   nnnnnnnnnnnnnnnnnnnn========= "<<typeid(check_size->ty_->ActualTy()).name()<<"  "<<typeid(check_init->ty_->ActualTy()).name();
   auto *expList = new tree::ExpList();
   expList->Append(check_size->exp_->UnEx());
   expList->Append(check_init->exp_->UnEx());
   tr::Exp *exp = new tr::ExExp(frame::externalCall("init_array", expList));
-  std::cout<<"  "<< typeid(ty->ActualTy()).name()<<std::endl;
   return new tr::ExpAndTy(exp, ty);
 }
 
@@ -792,7 +775,6 @@ tr::Exp *FunctionDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
   /* TODO: Put your lab5 code here */
   sym::Table<int> *check_table = new sym::Table<int>();
   for (FunDec *fundec : functions_->GetList()) {
-  std::cout<<" adding function:  "<<fundec->name_->Name()<<"\n";
   if(!fundec){
         errormsg->Error(pos_,"no fundec!!!!!!!!");
         return nullptr;
@@ -806,7 +788,6 @@ tr::Exp *FunctionDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
   std::list<bool> *esc_list =make_formal_esclist(
       fundec->params_
       );
-  std::cout<<"length "<<esc_list->size()<<std::endl;
   tr::Level *new_level = tr::Level::NewLevel(
       level,
       fundec->name_,
@@ -835,7 +816,6 @@ tr::Exp *FunctionDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
   }
   }
   for (FunDec *fundec : functions_->GetList()) {
-  std::cout<<"checking function:  "<<fundec->name_->Name()<<"\n";
   venv->BeginScope();
   if(!venv->Look(fundec->name_)){
         errormsg->Error(pos_,fundec->name_->Name()+"undefined !!!!!!!");
@@ -853,7 +833,6 @@ tr::Exp *FunctionDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
   auto formal_ty = fun_entry->formals_->GetList().begin();
   for (;field!=fundec->params_->GetList().end()&&access_!=temp_frame.end()&&formal_ty!=fun_entry->formals_->GetList().end();
        field++,access_++,formal_ty++) {
-        std::cout<<"Enter venv : "<<(*field)->name_->Name()<<std::endl;
         if(!(*field)){
           std::cout<<"no field \n";
         }
@@ -870,16 +849,13 @@ tr::Exp *FunctionDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
                     fun_entry->level_,
                     *access_),
                 *formal_ty));
-        std::cout<<"    "<<(*access_)->reg<<"  "<<(*access_)<<" with type "<< typeid((*formal_ty)->ActualTy()).name()<<std::endl;
   }
-  std::cout<<"end adding \n";
     tr::ExpAndTy *entry = fundec->body_->Translate(venv, tenv, fun_entry->level_, fun_entry->label_, errormsg);
     if(!entry){
         errormsg->Error(pos_," Entry undefined !!!!!!!");
         return nullptr;
     }
     venv->EndScope();
-    std::cout<<"end scope \n";
     if(!fun_entry->level_){
         errormsg->Error(pos_," Level undefined !!!!!!!");
         return nullptr;
