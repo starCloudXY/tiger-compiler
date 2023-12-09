@@ -19,7 +19,7 @@ private:
   int label_id_ = 0;
   static LabelFactory label_factory;
 };
-
+//Temporaries
 class Temp {
   friend class TempFactory;
 
@@ -65,7 +65,9 @@ public:
   TempList(std::initializer_list<Temp *> list) : temp_list_(list) {}
   TempList() = default;
   void Append(Temp *t) { temp_list_.push_back(t); }
-  [[nodiscard]] Temp *NthTemp(int i) const;
+  [[nodiscard]] Temp *NthTemp(int i) const{
+
+  };
   [[nodiscard]] const std::list<Temp *> &GetList() const { return temp_list_; }
 
 private:
