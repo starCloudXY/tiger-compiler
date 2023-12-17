@@ -1,6 +1,7 @@
 #include "tiger/frame/temp.h"
 
 #include <cstdio>
+#include <iostream>
 #include <set>
 #include <sstream>
 

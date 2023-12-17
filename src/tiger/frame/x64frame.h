@@ -33,11 +33,10 @@ public:
     r15 = temp::TempFactory::NewTemp();
     rbp = temp::TempFactory::NewTemp();
     rsp = temp::TempFactory::NewTemp();
-    fp = temp::TempFactory::NewTemp();
     caller_save_reg = new temp::TempList({rax,rdi,rsi,rdx,rcx,r8,r9,r10,r11});
     callee_save_reg = new temp::TempList({rbx,rbp,r12,r13,r14,r15});
-    registers = new temp::TempList({rax, rdi, rsi, rdx, rcx, r8, r9,
-                                    r10, r11, rbx, rbp, r12, r13, r14, r15, rsp});
+    regs_ =  {rax, rdi, rsi, rdx, rcx, r8, r9,
+                                    r10, r11, rbx, rbp, r12, r13, r14, r15, rsp};
     arg_reg = new temp::TempList({rdi,rsi,rdx,rcx,r8,r9});
     ret_sink_reg = new temp::TempList({rsp,rax,rbx,rbp,r12,r13,r14,r15});
     temp_map_ = temp::Map::Empty();
@@ -50,8 +49,10 @@ public:
     temp_map_->Enter(r9, new std::string("%r9"));
     temp_map_->Enter(r10, new std::string("%r10"));
     temp_map_->Enter(r11, new std::string("%r11"));
+    temp_map_->Enter(rbx, new std::string("%rbx"));
     temp_map_->Enter(rbp, new std::string("%rbp"));
     temp_map_->Enter(r12, new std::string("%r12"));
+    temp_map_->Enter(r13, new std::string("%r13"));
     temp_map_->Enter(r14, new std::string("%r14"));
     temp_map_->Enter(r15, new std::string("%r15"));
     temp_map_->Enter(rsp, new std::string("%rsp"));
@@ -59,10 +60,9 @@ public:
 public:
 
   // caller-saved registers
-  temp::Temp *rax,*rdi,*rsi,*rdx,*rcx,*r8,*r9,*r10,*r11,*fp;
+  temp::Temp *rax,*rdi,*rsi,*rdx,*rcx,*r8,*r9,*r10,*r11;
   // caller-saved registers
   temp::Temp *rbx,*rbp,*rsp,*r12,*r13,*r14,*r15;
-  temp::Map *temp_map_ = nullptr;
 
   temp::TempList *registers,*arg_reg,*caller_save_reg,*callee_save_reg,*ret_sink_reg;
   int WordSize() override{
@@ -86,7 +86,8 @@ public:
   };
 
   temp::Temp *FramePointer()override{
-      return fp;
+      assert(rbp);
+      return rbp;
   };
   temp::Temp *StackPointer()override{
       return rsp;
@@ -95,23 +96,21 @@ public:
       return rax;
   };
   temp::Temp *ARG_nth(int num) override {
+
       switch (num) {
-      case 1: return rdi;
-      case 2: return rsi;
-      case 3: return rdx;
-      case 4: return rcx;
-      case 5: return r8;
-      case 6: return r9;
+      case 0: return rdi;
+      case 1: return rsi;
+      case 2: return rdx;
+      case 3: return rcx;
+      case 4: return r8;
+      case 5: return r9;
       default: return nullptr;
       }
   }
 };
-class X64Frame : public Frame {
+class X64Frame :public Frame{
   /* TODO: Put your lab5 code here */
 public:
-  temp::Label *label;
-  std::list<frame::Access *> formals_;
-  int offset;
   X64Frame(temp::Label *name, std::list<bool> *escapes);
   Access *allocLocal(bool escape) override;
 };
