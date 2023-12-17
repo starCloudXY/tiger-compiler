@@ -4,6 +4,7 @@
 #include <array>
 #include <cassert>
 #include <cstdio>
+#include <iostream>
 #include <list>
 #include <string>
 
@@ -81,7 +82,7 @@ class SeqStm : public Stm {
 public:
   Stm *left_, *right_;
 
-  SeqStm(Stm *left, Stm *right) : left_(left), right_(right) { assert(left); }
+  SeqStm(Stm *left, Stm *right) : left_(left), right_(right) {}
   ~SeqStm() override;
 
   void Print(FILE *out, int d) const override;

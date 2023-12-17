@@ -1,4 +1,5 @@
 #include "tiger/codegen/assem.h"
+#include "tiger/translate/translate.h"
 
 #include <cassert>
 
@@ -78,6 +79,7 @@ void MoveInstr::Print(FILE *out, temp::Map *m) const {
   if (!dst_ && !src_) {
     std::size_t srcpos = assem_.find_first_of('%');
     if (srcpos != std::string::npos) {
+      DBG("no nopes!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
       std::size_t dstpos = assem_.find_first_of('%', srcpos + 1);
       if (dstpos != std::string::npos) {
         if ((assem_[srcpos + 1] == assem_[dstpos + 1]) &&

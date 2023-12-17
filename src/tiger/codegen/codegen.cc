@@ -1,4 +1,5 @@
 #include "tiger/codegen/codegen.h"
+#include "tiger/translate/translate.h"
 
 #include <cassert>
 #include <sstream>
@@ -14,20 +15,34 @@ constexpr int maxlen = 1024;
 
 namespace cg {
 enum CalleeType{
-  rbx,
+  rbx = 0,
   rbp,
   r12,
   r13,
   r14,
   r15
 };
-temp::Temp *callee_reg[6];
+static temp::Temp *callee_reg[6];
 
 void CodeGen::Codegen() {
   /* TODO: Put your lab5 code here */
   auto instr_list = new assem::InstrList();
-  fs_ = frame_->label->Name() + "_framesize";
+  std::cout<<frame_<<" get name\n";
+  if(!frame_){
+    std::cout<<"no frame\n";
+  }
+  if(!frame_->label){
+    std::cout<<"no label\n";
+  }
+
+  fs_ = ((frame::X64Frame*)frame_)->label->Name() + "_framesize";
   auto x64RM = dynamic_cast<frame::X64RegManager *>(reg_manager);
+  instr_list->Append(new assem::OperInstr(
+      "leaq " + fs_ + "(%rsp), `d0",
+      new temp::TempList(
+          reg_manager->ReturnValue()),
+      nullptr,
+      nullptr));
   {
     // save callee-saved registers
     callee_reg[CalleeType::rbx] = temp::TempFactory::NewTemp();
@@ -42,11 +57,21 @@ void CodeGen::Codegen() {
     instr_list->Append(new assem::MoveInstr("movq `s0, `d0", new temp::TempList(callee_reg[CalleeType::r13]), new temp::TempList(x64RM->r13)));
     instr_list->Append(new assem::MoveInstr("movq `s0, `d0", new temp::TempList(callee_reg[CalleeType::r14]), new temp::TempList(x64RM->r14)));
     instr_list->Append(new assem::MoveInstr("movq `s0, `d0", new temp::TempList(callee_reg[CalleeType::r15]), new temp::TempList(x64RM->r15)));
+
   }
   assem_instr_ = std::make_unique<cg::AssemInstr>(cg::AssemInstr(instr_list));
+
+  instr_list->Append(
+      new assem::OperInstr(
+        "leaq " + fs_ + "(`s0), `d0",
+        new temp::TempList(reg_manager->FramePointer()),
+        new temp::TempList(reg_manager->StackPointer()), nullptr)
+                     );
+
   for (tree::Stm *stm : traces_->GetStmList()->GetList()) {
     stm->Munch(*assem_instr_->GetInstrList(), fs_);
   }
+  std::cout<<"make assemble munch \n";
   //restore callee registers
   {
     auto instr_p = &(*assem_instr_->GetInstrList());
@@ -57,7 +82,7 @@ void CodeGen::Codegen() {
     instr_p->Append(new assem::MoveInstr("movq `s0, `d0", new temp::TempList(x64RM->r14), new temp::TempList(callee_reg[CalleeType::r14])));
     instr_p->Append(new assem::MoveInstr("movq `s0, `d0", new temp::TempList(x64RM->r15), new temp::TempList(callee_reg[CalleeType::r15])));
   }
-  frame::procEntryExit_instr(assem_instr_->GetInstrList());
+  frame::procEntryExit2(assem_instr_->GetInstrList());
 }
 
 void AssemInstr::Print(FILE *out, temp::Map *map) const {
@@ -72,12 +97,14 @@ namespace tree {
 
 void SeqStm::Munch(assem::InstrList &instr_list, std::string_view fs) {
   /* TODO: Put your lab5 code here */
+  DBG("SEQ MUNCH")
   left_->Munch(instr_list,fs);
   right_->Munch(instr_list,fs);
 }
 
 void LabelStm::Munch(assem::InstrList &instr_list, std::string_view fs) {
   /* TODO: Put your lab5 code here */
+  DBG("LABEL MUNCH")
   instr_list.Append(
       new assem::LabelInstr(
           label_->Name(),
@@ -88,6 +115,7 @@ void LabelStm::Munch(assem::InstrList &instr_list, std::string_view fs) {
 
 void JumpStm::Munch(assem::InstrList &instr_list, std::string_view fs) {
   /* TODO: Put your lab5 code here */
+  DBG("JMP MUNCH")
   temp::Label *label = exp_->name_;
   auto targets = new assem::Targets(jumps_);
   instr_list.Append(
@@ -102,6 +130,7 @@ void JumpStm::Munch(assem::InstrList &instr_list, std::string_view fs) {
 
 void CjumpStm::Munch(assem::InstrList &instr_list, std::string_view fs) {
   /* TODO: Put your lab5 code here */
+  DBG("CJUMP MUNCH")
   temp::Temp *left = left_->Munch(
       instr_list,
       fs
@@ -168,10 +197,12 @@ void CjumpStm::Munch(assem::InstrList &instr_list, std::string_view fs) {
 
 void MoveStm::Munch(assem::InstrList &instr_list, std::string_view fs) {
   /* TODO: Put your lab5 code here */
+  DBG("MOVE MUNCH")
   temp::Temp *src = src_->Munch(
       instr_list,
       fs
       );
+  DBG("MOVE MUNCH sss")
   if(typeid(*dst_)== typeid(tree::MemExp)){
     temp::Temp *dst = ((MemExp *)dst_)->exp_->Munch(instr_list, fs);
     instr_list.Append(
@@ -194,11 +225,13 @@ void MoveStm::Munch(assem::InstrList &instr_list, std::string_view fs) {
 
 void ExpStm::Munch(assem::InstrList &instr_list, std::string_view fs) {
   /* TODO: Put your lab5 code here */
+  DBG("EXP MUNCH")
   exp_->Munch(instr_list, fs);
 }
 
 temp::Temp *BinopExp::Munch(assem::InstrList &instr_list, std::string_view fs) {
   /* TODO: Put your lab5 code here */
+  DBG("BIN MUNCH")
   std::string op_instr;
   switch (op_) {
   case PLUS_OP:
@@ -303,6 +336,7 @@ temp::Temp *BinopExp::Munch(assem::InstrList &instr_list, std::string_view fs) {
 
 temp::Temp *MemExp::Munch(assem::InstrList &instr_list, std::string_view fs) {
   /* TODO: Put your lab5 code here */
+  DBG("MEM MUNCH")
   temp::Temp *reg = temp::TempFactory::NewTemp();
   temp::Temp *exp = exp_->Munch(instr_list, fs);
   instr_list.Append(
@@ -316,6 +350,7 @@ temp::Temp *MemExp::Munch(assem::InstrList &instr_list, std::string_view fs) {
 
 temp::Temp *TempExp::Munch(assem::InstrList &instr_list, std::string_view fs) {
   /* TODO: Put your lab5 code here */
+  DBG("temp MUNCH")
   if (temp_ != reg_manager->FramePointer()) {
     return temp_;
   }
@@ -332,12 +367,14 @@ temp::Temp *TempExp::Munch(assem::InstrList &instr_list, std::string_view fs) {
 
 temp::Temp *EseqExp::Munch(assem::InstrList &instr_list, std::string_view fs) {
   /* TODO: Put your lab5 code here */
+  DBG("ESEQ MUNCH")
   stm_->Munch(instr_list, fs);
   return exp_->Munch(instr_list, fs);
 }
 
 temp::Temp *NameExp::Munch(assem::InstrList &instr_list, std::string_view fs) {
   /* TODO: Put your lab5 code here */
+  DBG("NAME MUNCH")
   temp::Temp *dst = temp::TempFactory::NewTemp();
   instr_list.Append(
       new assem::OperInstr(
@@ -350,6 +387,7 @@ temp::Temp *ConstExp::Munch(assem::InstrList &instr_list, std::string_view fs) {
   /* TODO: Put your lab5 code here */
   temp::Temp *dst = temp::TempFactory::NewTemp();
   // Imm
+  DBG("CONSt MUNCH")
   instr_list.Append(
       new assem::OperInstr(
           "movq $" +
@@ -360,22 +398,44 @@ temp::Temp *ConstExp::Munch(assem::InstrList &instr_list, std::string_view fs) {
 
 temp::Temp *CallExp::Munch(assem::InstrList &instr_list, std::string_view fs) {
   /* TODO: Put your lab5 code here */
-  std::cout<<"call exp\n";
+//  DBG("Call MUNCH")
+//  instr_list.Append(
+//      new assem::OperInstr(
+//      "callq " + (reinterpret_cast<NameExp *>(fun_))->name_->Name(),
+//      reg_manager->CallerSaves(),
+//          reg_manager->ArgRegs(),
+//          nullptr));
+//  temp::Temp *reg = temp::TempFactory::NewTemp();
+//  //set return value
+//  instr_list.Append(
+//      new assem::MoveInstr(
+//          "movq `s0, `d0",
+//          new temp::TempList(reg),
+//          new temp::TempList(
+//              reg_manager->ReturnValue())));
+//  return reg;
+  temp::TempList *arg_regs = args_->MunchArgs(instr_list, fs);
+
+  // CALL instruction will trash caller saved registers
+  // specifies these registers and as “destinations” of the call
+  instr_list.Append(new assem::OperInstr(
+      "callq " + (dynamic_cast<NameExp *>(fun_))->name_->Name(),
+      reg_manager->CallerSaves(), arg_regs, nullptr));
+  // get return value
+  temp::Temp *return_temp = temp::TempFactory::NewTemp();
   instr_list.Append(
-      new assem::OperInstr(
-      "callq " + (reinterpret_cast<NameExp *>(fun_))->name_->Name(),
-      reg_manager->CallerSaves(),
-          reg_manager->ArgRegs(),
-          nullptr));
-  temp::Temp *reg = temp::TempFactory::NewTemp();
-  //set return value
-  instr_list.Append(
-      new assem::MoveInstr(
-          "movq `s0, `d0",
-          new temp::TempList(reg),
-          new temp::TempList(
-              reg_manager->ReturnValue())));
-  return reg;
+      new assem::MoveInstr("movq `s0, `d0", new temp::TempList(return_temp),
+                           new temp::TempList(reg_manager->ReturnValue())));
+  // reset sp when existing arguments passed on the stack
+  int arg_reg_num = reg_manager->ArgRegs()->GetList().size();
+  int arg_stack_num = std::max(int(args_->GetList().size()) - arg_reg_num, 0);
+  if (arg_stack_num > 0) {
+    instr_list.Append(new assem::OperInstr(
+        "addq $" + std::to_string(arg_stack_num * reg_manager->WordSize()) +
+            ", `d0",
+        new temp::TempList(reg_manager->StackPointer()), nullptr, nullptr));
+  }
+  return return_temp;
 }
 
 temp::TempList *ExpList::MunchArgs(assem::InstrList &instr_list, std::string_view fs) {

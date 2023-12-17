@@ -56,7 +56,8 @@ public:
   temp::TempList *dst_, *src_;
 
   MoveInstr(std::string assem, temp::TempList *dst, temp::TempList *src)
-      : assem_(std::move(assem)), dst_(dst), src_(src) {}
+      : assem_(std::move(assem)), dst_(dst), src_(src) {
+  }
 
   void Print(FILE *out, temp::Map *m) const override;
 

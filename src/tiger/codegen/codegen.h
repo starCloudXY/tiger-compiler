@@ -46,8 +46,7 @@ public:
   std::unique_ptr<AssemInstr> TransferAssemInstr() {
     return std::move(assem_instr_);
   }
-  void PushRegToStack(assem::InstrList &instr_list, temp::Temp *reg);
-  void PopRegFromStack(assem::InstrList &instr_list, temp::Temp *reg);
+
 
 private:
   frame::Frame *frame_;

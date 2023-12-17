@@ -1,6 +1,6 @@
 #ifndef TIGER_TRANSLATE_TRANSLATE_H_
 #define TIGER_TRANSLATE_TRANSLATE_H_
-
+#define DBG(format, ...)  if(0){std::cout<<format<<std::endl;}
 #include <list>
 #include <memory>
 
@@ -35,6 +35,7 @@ public:
   PatchList() = default;
 
   [[nodiscard]] const std::list<temp::Label **> &GetList() const {
+
     return patch_list_;
   }
 
@@ -59,22 +60,48 @@ public:
 
   /* TODO: Put your lab5 code here */
   Level() = default;
-  Level(frame::Frame *frame_, Level *parent_):frame_(frame_),parent_(parent_){
+  Level(frame::Frame *frame, Level *parent):parent_(parent){
+    frame_=(frame::X64Frame*)frame;
+
   }
-  std::list<Access> *Formals (Level *level){
-    return nullptr;
+  Level(Level *parent, temp::Label *name,
+        std::list<bool> *formals):parent_(parent){
+    // add formal parameter for static link
+    formals->push_front(true);
+    // allocate new frame
+    frame_ = new frame::X64Frame(name, formals);
+  };
+  std::list<Access *> *Formals(){
+    DBG("Step in");
+    std::list<frame::Access *> formal_list = frame_->formals_;
+    DBG("std::list<frame::Access *> *formal_list get");
+    std::list<tr::Access *> *formal_list_with_level =
+        new std::list<tr::Access *>();
+    DBG("std::list<tr::Access *> *formal_list_with_level newed");
+    bool first = true;
+    for (frame::Access *formal : formal_list) {
+      if (first) {
+        // skip the first para static link
+        DBG("skip the first para static link");
+        first = false;
+        continue;
+      }
+      DBG("formal_list_with_level push back para");
+      formal_list_with_level->push_back(new tr::Access(this, formal));
+    }
+    DBG("std::list<tr::Access *> *formal_list_with_level built");
+    return formal_list_with_level;
   }
   static Level *NewLevel(Level *parent,temp::Label *name,std::list<bool> *formals){
       ////why?
-      formals->push_back(true);
-      int count = 0;
-      for(bool &formal:*formals){
-        if(count>=6){
-          formal = true;
-        }
-        count++;
-      }
-      return new Level(new frame::X64Frame(name,formals),parent);
+    DBG("making new level\n");
+    formals->push_front(true);
+
+      return new Level(
+          new frame::X64Frame(
+              name,
+              formals),
+          parent);
   };
 
 };
@@ -86,7 +113,9 @@ public:
          std::unique_ptr<err::ErrorMsg> errormsg)
       : absyn_tree_(std::move(absyn_tree)), errormsg_(std::move(errormsg)),
         tenv_(std::make_unique<env::TEnv>()),
-        venv_(std::make_unique<env::VEnv>()) {}
+        venv_(std::make_unique<env::VEnv>()) {
+
+  }
   /**
    * Translate IR tree
    */
