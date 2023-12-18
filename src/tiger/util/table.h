@@ -40,7 +40,6 @@ void Table<KeyType, ValueType>::Enter(KeyType *key, ValueType *value) {
 
 template <typename KeyType, typename ValueType>
 ValueType *Table<KeyType, ValueType>::Look(KeyType *key) {
-  assert(key);
   unsigned long index = reinterpret_cast<unsigned long>(key) % TABSIZE;
   Binder *b;
   for (b = table_[index]; b; b = b->next)

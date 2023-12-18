@@ -736,7 +736,7 @@ public:
 private:
   std::list<EField *> efield_list_;
 };
-
+tree::Exp *StaticLink(tr::Level *target, tr::Level *level);
 }; // namespace absyn
 
 #endif // TIGER_ABSYN_ABSYN_H_
