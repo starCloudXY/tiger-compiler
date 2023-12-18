@@ -412,9 +412,6 @@ tr::ExpAndTy *CallExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
           return 0;
         }
         args_list->Append(actual_exp_and_type->exp_->UnEx());
-        std::cout<<"------------------------\n";
-        actual_exp_and_type->exp_->UnEx()->Print(stdout,0);
-        std::cout<<"\n------------------------\n";
         ++formal_type;
       }
 

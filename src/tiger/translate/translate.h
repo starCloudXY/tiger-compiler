@@ -1,6 +1,6 @@
 #ifndef TIGER_TRANSLATE_TRANSLATE_H_
 #define TIGER_TRANSLATE_TRANSLATE_H_
-#define DBG(format, ...)  {std::cout<<format<<std::endl;}
+#define DBG(format, ...)  if(0){std::cout<<format<<std::endl;}
 #include <list>
 #include <memory>
 
