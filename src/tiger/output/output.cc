@@ -13,10 +13,11 @@ void AssemGen::GenAssem(bool need_ra) {
 
   // Output proc
   phase = frame::Frag::Proc;
-  fprintf(out_, ".text\n");
-  for (auto &&frag : frags->GetList())
-    frag->OutputAssem(out_, phase, need_ra);
 
+  fprintf(out_, ".text\n");
+  for (auto &&frag : frags->GetList()){
+    frag->OutputAssem(out_, phase, need_ra);
+  }
   // Output string
   phase = frame::Frag::String;
   fprintf(out_, ".section .rodata\n");
@@ -40,6 +41,7 @@ void ProcFrag::OutputAssem(FILE *out, OutputPhase phase, bool need_ra) const {
   TigerLog("-------====IR tree=====-----\n");
   TigerLog(body_);
 
+  TigerLog("-------====finish =====-----\n");
   {
     // Canonicalize
     TigerLog("-------====Canonicalize=====-----\n");
@@ -62,7 +64,6 @@ void ProcFrag::OutputAssem(FILE *out, OutputPhase phase, bool need_ra) const {
 
     traces = canon.TransferTraces();
   }
-
   temp::Map *color = temp::Map::LayerMap(reg_manager->temp_map_, temp::Map::Name());
   {
     // Lab 5: code generation
@@ -72,9 +73,7 @@ void ProcFrag::OutputAssem(FILE *out, OutputPhase phase, bool need_ra) const {
     assem_instr = code_gen.TransferAssemInstr();
     TigerLog(assem_instr.get(), color);
   }
-
   assem::InstrList *il = assem_instr.get()->GetInstrList();
-  
 //   if (need_ra) {
 //     // Lab 6: register allocation
 //     TigerLog("----====Register allocate====-----\n");
@@ -86,11 +85,11 @@ void ProcFrag::OutputAssem(FILE *out, OutputPhase phase, bool need_ra) const {
 //   }
 
   TigerLog("-------====Output assembly for %s=====-----\n",
-           frame_->name_->Name().data());
+           frame_->label->Name().data());
 
   assem::Proc *proc = frame::ProcEntryExit3(frame_, il);
   
-  std::string proc_name = frame_->GetLabel();
+  std::string proc_name = frame_->label->Name();
 
   fprintf(out, ".globl %s\n", proc_name.data());
   fprintf(out, ".type %s, @function\n", proc_name.data());
@@ -115,6 +114,7 @@ void StringFrag::OutputAssem(FILE *out, OutputPhase phase, bool need_ra) const {
   fprintf(out, ".long %d\n", length);
   fprintf(out, ".string \"");
   for (int i = 0; i < length; i++) {
+    std::cout<<str_[i]<<std::endl;
     if (str_[i] == '\n') {
       fprintf(out, "\\n");
     } else if (str_[i] == '\t') {

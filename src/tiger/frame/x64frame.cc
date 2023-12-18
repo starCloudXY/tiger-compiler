@@ -1,12 +1,16 @@
 #include "tiger/frame/x64frame.h"
 #include "tiger/translate/translate.h"
+#include <sstream>
 
 extern frame::RegManager *reg_manager;
 
 namespace frame {
 /* TODO: Put your lab5 code here */
 tree::Exp *externalCall( std::string s, tree::ExpList *args) {
-  return new tree::CallExp(new tree::NameExp(temp::LabelFactory::NamedLabel(s)), args);
+  return new tree::CallExp(
+      new tree::NameExp(
+          temp::LabelFactory::NamedLabel(
+              s)), args);
 }
 class InFrameAccess : public Access {
 public:
@@ -22,9 +26,10 @@ public:
     return new tree::MemExp(
         new tree::BinopExp(
             tree::BinOp::PLUS_OP,
-            frame_ptr,
             new tree::ConstExp(
-                offset_)));
+                offset_),
+            frame_ptr
+            ));
   }
 };
 
@@ -130,21 +135,19 @@ assem::InstrList *procEntryExit2(assem::InstrList *body) {
     return body;
 }
 assem::Proc *ProcEntryExit3(frame::Frame *frame, assem::InstrList * body) {
-    static char instr[256];
+    std::stringstream prologue;
+    const std::string name = temp::LabelFactory::LabelString(frame->label);
+    const int rsp_offset = -1*frame->offset;
+    prologue << ".set " << name << "_framesize, " << rsp_offset << std::endl;
+    prologue << name << ":" << std::endl;
+    prologue << "subq $" << rsp_offset << ", %rsp" << std::endl;
 
-    std::string prolog;
-    int size = -frame->offset - 8;
-    sprintf(instr, ".set %s_framesize, %d\n", frame->label->Name().c_str(), size);
-    prolog = std::string(instr);
-    sprintf(instr, "%s:\n", frame->label->Name().c_str());
-    prolog.append(std::string(instr));
-    sprintf(instr, "subq $%d, %%rsp\n", size);
-    prolog.append(std::string(instr));
+    // epilog part
+    std::stringstream epilogue;
+    epilogue << "addq $" << rsp_offset << ", %rsp" << std::endl;
+    epilogue << "retq" << std::endl << ".END" << std::endl;
+    return new assem::Proc(prologue.str(), body, epilogue.str());
 
-    sprintf(instr, "addq $%d, %%rsp\n", size);
-    std::string epilog = std::string(instr);
-    epilog.append(std::string("retq\n"));
-    return new assem::Proc(prolog, body, epilog);
 }
 
 } // namespace frame

@@ -1,6 +1,6 @@
 #ifndef TIGER_TRANSLATE_TRANSLATE_H_
 #define TIGER_TRANSLATE_TRANSLATE_H_
-#define DBG(format, ...)  if(0){std::cout<<format<<std::endl;}
+#define DBG(format, ...)  {std::cout<<format<<std::endl;}
 #include <list>
 #include <memory>
 
@@ -51,12 +51,13 @@ public:
   Access(Level *level, frame::Access *access)
       : level_(level), access_(access) {}
   static Access *AllocLocal(Level *level, bool escape);
+
 };
 
 class Level {
 public:
   frame::Frame *frame_;
-  Level *parent_;
+  Level *parent_= nullptr;
 
   /* TODO: Put your lab5 code here */
   Level() = default;

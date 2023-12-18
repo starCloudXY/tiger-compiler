@@ -15,7 +15,7 @@ namespace tr {
 
 Access *Access::AllocLocal(Level *level, bool escape) {
   /* TODO: Put your lab5 code here */
-  return new Access(level,level->frame_->allocLocal(escape));
+  return new Access(level, level->frame_->allocLocal(escape));
 }
 
 class Cx {
@@ -62,14 +62,11 @@ public:
   [[nodiscard]] Cx UnCx(err::ErrorMsg *errormsg) override {
     DBG("ExCX")
     /* TODO: Put your lab5 code here */
-    auto stm = new tree::CjumpStm(
-        tree::RelOp::NE_OP,
-        exp_,
-        new tree::ConstExp(0),
-        nullptr,
-        nullptr);
+    auto stm = new tree::CjumpStm(tree::RelOp::NE_OP, exp_,
+                                  new tree::ConstExp(0), nullptr, nullptr);
     PatchList trues = PatchList(std::list<temp::Label **>{&(stm->true_label_)});
-    PatchList falses = PatchList(std::list<temp::Label **>{&(stm->false_label_)});
+    PatchList falses =
+        PatchList(std::list<temp::Label **>{&(stm->false_label_)});
     return {trues, falses, stm};
   }
 };
@@ -83,7 +80,7 @@ public:
   [[nodiscard]] tree::Exp *UnEx() override {
     /* TODO: Put your lab5 code here */
     DBG("NXEx")
-    return new tree::EseqExp(stm_,new tree::ConstExp(0));
+    return new tree::EseqExp(stm_, new tree::ConstExp(0));
   }
   [[nodiscard]] tree::Stm *UnNx() override {
     /* TODO: Put your lab5 code here */
@@ -112,31 +109,27 @@ public:
     cx_.trues_.DoPatch(t);
     cx_.falses_.DoPatch(f);
     return new tree::EseqExp(
-        new tree::MoveStm(
-            new tree::TempExp(r),
-            new tree::ConstExp(1)),
+        new tree::MoveStm(new tree::TempExp(r), new tree::ConstExp(1)),
         new tree::EseqExp(
             cx_.stm_,
             new tree::EseqExp(
                 new tree::LabelStm(f),
-                new tree::EseqExp(
-                    new tree::MoveStm(new tree::TempExp(r),new tree::ConstExp(0)),
-                    new tree::EseqExp(new tree::LabelStm(t),new tree::TempExp(r)))
-                )
-            )
-        );
+                new tree::EseqExp(new tree::MoveStm(new tree::TempExp(r),
+                                                    new tree::ConstExp(0)),
+                                  new tree::EseqExp(new tree::LabelStm(t),
+                                                    new tree::TempExp(r))))));
   }
   [[nodiscard]] tree::Stm *UnNx() override {
     DBG("CxNX")
     /* TODO: Put your lab5 code here */
-//    temp::Label  *label = temp::LabelFactory::NewLabel();
-//    cx_.trues_.DoPatch(label);
-//    cx_.falses_.DoPatch(label);
-//    auto cjumpStm = dynamic_cast<tree::CjumpStm *>(cx_.stm_);
-//    cjumpStm->true_label_ = label;
-//    cjumpStm->false_label_ = label;
-//    return new tree::SeqStm(cx_.stm_,new tree::LabelStm(label));
-    return  cx_.stm_;
+    //    temp::Label  *label = temp::LabelFactory::NewLabel();
+    //    cx_.trues_.DoPatch(label);
+    //    cx_.falses_.DoPatch(label);
+    //    auto cjumpStm = dynamic_cast<tree::CjumpStm *>(cx_.stm_);
+    //    cjumpStm->true_label_ = label;
+    //    cjumpStm->false_label_ = label;
+    //    return new tree::SeqStm(cx_.stm_,new tree::LabelStm(label));
+    return cx_.stm_;
   }
   [[nodiscard]] Cx UnCx(err::ErrorMsg *errormsg) override {
     /* TODO: Put your lab5 code here */
@@ -145,42 +138,29 @@ public:
     return cx_;
   }
 };
-Level Outermost(temp::Label *label,std::list<bool> *formals) {
+Level Outermost(temp::Label *label, std::list<bool> *formals) {
   DBG("make outermost\n");
   formals->push_front(true);
-  frame::X64Frame *pFrame = new frame::X64Frame(
-  label,
-      formals);
-  return Level(
-     pFrame,
-     nullptr);;
+  frame::X64Frame *pFrame = new frame::X64Frame(label, formals);
+  return Level(pFrame, nullptr);
+  ;
 }
+
 void ProgTr::Translate() {
 
-  /* TODO: Put your lab5 code here */
-  temp::Label *main_label = temp::LabelFactory::NamedLabel("tigermain");
-  main_level_ =
-      std::make_unique<tr::Level>(Outermost(main_label,new std::list<bool>()));
-  Level *mainframe = main_level_.get();
-  FillBaseVEnv();
   FillBaseTEnv();
-  tr::ExpAndTy *main =absyn_tree_->Translate(
-      venv_.get(),
-      tenv_.get(),
-      main_level_.get(),
-      main_label,
-      errormsg_.get()
-      );
-  frags->PushBack(
-      new frame::ProcFrag(
-          main->exp_->UnNx(),
-          (mainframe->frame_)
-          )
-      );
+  FillBaseVEnv();
+  /* TODO: Put your lab5 code here */
+  temp::Label *main_label_ = temp::LabelFactory::NamedLabel("tigermain");
+  main_level_ =
+      std::make_unique<Level>(nullptr, main_label_, new std::list<bool>());
+
+  tr::ExpAndTy *main =
+      absyn_tree_->Translate(venv_.get(), tenv_.get(), main_level_.get(),
+                             main_label_, errormsg_.get());
+  frags->PushBack(new frame::ProcFrag(main->exp_->UnNx(), main_level_->frame_));
 }
-
-} // namespace tr
-
+}
 namespace absyn {
 static type::TyList *make_formal_tylist(env::TEnvPtr tenv, FieldList *params, err::ErrorMsg *errormsg) {
   auto result = new type::TyList();
@@ -250,6 +230,14 @@ tr::ExpAndTy *SimpleVar::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
     }
     if(entry&&(typeid(*entry) == typeid(env::VarEntry))){
     auto varEntry = dynamic_cast<env::VarEntry *>(entry);
+
+//    tree::Exp *exp = var_entry->access_->ToExp(level);
+//    tree::Exp *Access::ToExp(Level *currentLevel) {
+//      // get the exp to access the variable, consider static links
+//      // get framePtr of the frame where var in
+//      tree::Exp *framePtr = currentLevel->StaticLink(level_);
+//      return access_->ToExp(framePtr);
+//    }
     auto exp = TranslateSimpleVar(varEntry->access_,level);
     if(!varEntry->ty_){
       errormsg->Error(pos_," no type!!!!!!");
@@ -384,50 +372,59 @@ tr::ExpAndTy *CallExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
                                  err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab5 code here */
     DBG("Start translate CallExp\n");
-  tr::Exp *exp = nullptr;
-  env::FunEntry *entry = (env::FunEntry*) venv->Look(func_);
-  DBG("translate  call function ");
-  DBG(func_->Name()+"\n");
-  if(entry== nullptr){
-      errormsg->Error(pos_,"undefined function call  "+func_->Name());
-  }
-  type::Ty *type;
+    /* TODO: Put your lab5 code here */
+    // check if function is defined
+    env::EnvEntry *entry = venv->Look(func_);
+    if (entry && typeid(*entry) == typeid(env::FunEntry)) {
+      env::FunEntry *func = dynamic_cast<env::FunEntry *>(entry);
 
-  if(entry== nullptr){
-      errormsg->Error(pos_,"with no funentry "+func_->Name()+" %s.");
-      return new tr::ExpAndTy(nullptr,type::VoidTy::Instance());
-  }
-  auto fun_entry = dynamic_cast<env::FunEntry *>(entry);
-  auto *exp_list = new tree::ExpList();
-  DBG("check args ");
-  for(Exp *arg : args_->GetList()){
-      tr::ExpAndTy *check_arg = arg->Translate(venv,tenv,level,label,errormsg);
-      exp_list->Append(check_arg->exp_->UnEx());
-  }
-  DBG("get exp");
+      // check if formals num match args num
+      if (func->formals_->GetList().size() != args_->GetList().size()) {
+        if (args_->GetList().size() > func->formals_->GetList().size()) {
+          errormsg->Error(pos_ - 1,
+                          "too many params in function " + func_->Name());
+          return 0;
+        } else {
+          errormsg->Error(pos_ - 1, "para type mismatch");
+          return 0;
+        }
+      }
 
-  if(!fun_entry->level_->parent_){
-      exp = new tr::ExExp(
-          frame::externalCall(
-              func_->Name(),
-              exp_list));
-  } else{
-      exp_list->Append(
-          StaticLink(
-              fun_entry->level_->parent_,
-              level));
-      exp = new tr::ExExp(
-          new tree::CallExp(
-              new tree::NameExp(
-                  func_),
-              exp_list));
-  }
-  if(fun_entry->result_){
-      type = fun_entry->result_->ActualTy();
-  }
-  else type = type::VoidTy::Instance();
-  DBG("return");
-  return new tr::ExpAndTy(exp, type);
+      tree::ExpList *args_list = new tree::ExpList();
+      // pass static link as the first parameter
+
+//      // If this is a user function
+      if (func->level_) {
+
+        // Pass static link as the first parameter
+        args_list->Append(StaticLink(level,func->level_));
+      }
+
+      // check if types of actual and formal parameters match
+      // need to use cbegin for const function
+      auto formal_type = func->formals_->GetList().cbegin();
+      for (Exp *arg : args_->GetList()) {
+        tr::ExpAndTy *actual_exp_and_type =
+            arg->Translate(venv, tenv, level, label, errormsg);
+        type::Ty *actual_type = actual_exp_and_type->ty_;
+        if (!actual_type->IsSameType(*formal_type)) {
+          errormsg->Error(arg->pos_, "para type mismatch");
+          return 0;
+        }
+        args_list->Append(actual_exp_and_type->exp_->UnEx());
+        std::cout<<"------------------------\n";
+        actual_exp_and_type->exp_->UnEx()->Print(stdout,0);
+        std::cout<<"\n------------------------\n";
+        ++formal_type;
+      }
+
+      tree::CallExp *exp = new tree::CallExp(new tree::NameExp(func_), args_list);
+
+      // return result type of function
+      return new tr::ExpAndTy(new tr::ExExp(exp), func->result_);
+
+    }
+
 }
 
 tr::ExpAndTy *OpExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
@@ -568,17 +565,33 @@ tr::ExpAndTy *RecordExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
   DBG("Start translate RECORD exp\n");
   tr::ExExp *exp = nullptr;
   type::Ty *ty = tenv->Look(typ_);
-  auto list = new tree::ExpList();
-  auto fieldList = new type::FieldList();
-  if (!ty){
+
+  if (!ty||!(typeid(*(ty->ActualTy())) == typeid(type::RecordTy))){
     errormsg->Error(pos_, "undefined type %s", typ_->Name().c_str());
     return new tr::ExpAndTy(nullptr, type::IntTy::Instance());
   }
+  auto args_list = new tree::ExpList();
+  auto fieldList = new type::FieldList();
   auto records = dynamic_cast<type::RecordTy *>(ty->ActualTy())->fields_;
+  temp::Temp *reg = temp::TempFactory::NewTemp();
+  auto record = records->GetList().begin();
   int count = 0;
+  const int offset = (records->GetList()).size()*reg_manager->WordSize();
+
+
+
+  args_list->Append(
+      new tree::ConstExp(offset));
+  tree::MoveStm *left_move_stm = new tree::MoveStm(
+      new tree::TempExp(reg), frame::externalCall("alloc_record", args_list));
+
+  tree::SeqStm *initialization_list_head = nullptr;
+  tree::SeqStm *left_init_seq_stm =
+      new tree::SeqStm(left_move_stm, initialization_list_head);
+  tree::SeqStm *last_seq_stm = left_init_seq_stm;
 
   for (EField *eField : fields_->GetList()) {
-    count++;
+
     tr::ExpAndTy *check_exp =
         eField->exp_->Translate(venv, tenv, level, label, errormsg);
     fieldList->Append(
@@ -587,36 +600,42 @@ tr::ExpAndTy *RecordExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
           check_exp->ty_
             )
           );
-  }
-  temp::Temp *reg = temp::TempFactory::NewTemp();
-  auto expList = new tree::ExpList({new tree::ConstExp(count * reg_manager->WordSize())});
-  tree::Stm *stm = new tree::MoveStm(
-      new tree::TempExp(reg), frame::externalCall("alloc_record", expList));
-  count = 0;
-  tree::MemExp *t_exp = new tree::MemExp(
-      new tree::BinopExp(
-            tree::BinOp::PLUS_OP,
-            new tree::TempExp(reg),
-            new tree::ConstExp(
-              count*reg_manager->WordSize()
-              )
-          )
-      );
-
-
-  for (tree::Exp *exp : list->GetList()) {
-    stm = new tree::SeqStm(
-        stm,
-        new tree::MoveStm(
-            new tree::MemExp(
-                t_exp),
-            exp)
+    // check field name
+    if (eField->name_->Name() != (*record)->name_->Name()) {
+        errormsg->Error(pos_, "field %s doesn't exist",
+                        eField->name_->Name().data());
+    }
+    // check field type
+    if (!check_exp->ty_->IsSameType((*record)->ty_)) {
+        errormsg->Error(pos_, "type of field %s doesn't match",
+                        eField->name_->Name().data());
+    }
+    tree::BinopExp *address_exp =
+        new tree::BinopExp(tree::BinOp::PLUS_OP,
+                           new tree::TempExp(reg),
+                           new tree::ConstExp(
+                               count * reg_manager->WordSize())
         );
+    tree::Stm *stm = new tree::MoveStm(
+        new tree::MemExp(
+            address_exp),
+          check_exp->exp_->UnEx());
+    tree::SeqStm *seq_stm = new tree::SeqStm(stm, nullptr);
+    last_seq_stm->right_ = seq_stm;
+    last_seq_stm = seq_stm;
     count++;
+    record++;
   }
 
-  exp = new tr::ExExp(new tree::EseqExp(stm, new tree::TempExp(reg)));
-  return new tr::ExpAndTy(exp, ty->ActualTy());
+
+  last_seq_stm->right_ =  new tree::ExpStm(new tree::ConstExp(0));
+  tree::EseqExp *eseq_exp =
+      new tree::EseqExp(left_init_seq_stm, new tree::TempExp(reg));
+  if (fields_->GetList().empty()) {
+    return new tr::ExpAndTy(new tr::ExExp(eseq_exp), type::NilTy::Instance());
+  }
+  // The result of the whole expression is r
+  return new tr::ExpAndTy(new tr::ExExp(eseq_exp), ty->ActualTy());
 }
 
 tr::ExpAndTy *SeqExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
@@ -843,12 +862,7 @@ tr::ExpAndTy *ForExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
   // done:
   venv->EndScope();
   auto decList = new absyn::DecList();
-  decList->Prepend(
-      new absyn::VarDec(
-          0,
-          var_,
-          sym::Symbol::UniqueSymbol("int"),
-          lo_));
+
   decList->Prepend(
       new absyn::VarDec(
           0,
@@ -856,7 +870,12 @@ tr::ExpAndTy *ForExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
           sym::Symbol::UniqueSymbol("int"),
           hi_)
       );
-
+  decList->Prepend(
+      new absyn::VarDec(
+          0,
+          var_,
+          sym::Symbol::UniqueSymbol("int"),
+          lo_));
   auto expList = new absyn::ExpList();
   expList->Prepend(
       new absyn::AssignExp(
@@ -1102,6 +1121,7 @@ tr::Exp *VarDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
 
   type::Ty *var_type;
   if(typ_){
+    // var x : type_id := exp
     var_type = tenv->Look(typ_);
     if (!var_type) {
         errormsg->Error(pos_, "undefined type %s", typ_->Name().data());
@@ -1116,7 +1136,8 @@ tr::Exp *VarDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
     if ((check_init->ty_->ActualTy())==(type::NilTy::Instance())) {
         //////?
         errormsg->Error(pos_, "init should not be nil without type specified");
-        return new tr::NxExp(new tree::ExpStm(new tree::ConstExp(0)));
+        return new tr::NxExp(
+            new tree::ExpStm(new tree::ConstExp(0)));
     }
     var_type = check_init->ty_->ActualTy();
   }
@@ -1167,35 +1188,35 @@ tr::Exp *TypeDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
         tmp = next;
   }
   }
-  for (NameAndTy *type : types_->GetList()) {
-        // find name_ in tenv
-        type::NameTy *name_ty =
-            dynamic_cast<type::NameTy *>(tenv->Look(type->name_));
-
-        // add frag to .data segmant for new record type
-        if (typeid(*name_ty->ty_->ActualTy()) == typeid(type::RecordTy)) {
-          type::RecordTy *record_ty = dynamic_cast<type::RecordTy *>(name_ty->ty_);
-
-          // Lable: "typename_DESCRIPTOR"
-          std::string descriptor_label = name_ty->sym_->Name() + "_DESCRIPTOR";
-          std::string descriptor_type_str;
-
-          // check fields for pointers, if has pointer, set 1 for according pos;
-          // else set 0
-          for (const type::Field *field : record_ty->fields_->GetList()) {
-            if ((field->ty_)) {
-              descriptor_type_str += "1";
-            } else {
-              descriptor_type_str += "0";
-            }
-          }
-
-          // add to frag
-          frags->PushBack(new frame::StringFrag(
-              temp::LabelFactory::NamedLabel(descriptor_label),
-              descriptor_type_str));
-        }
-  }
+//  for (NameAndTy *type : types_->GetList()) {
+//        // find name_ in tenv
+//        type::NameTy *name_ty =
+//            dynamic_cast<type::NameTy *>(tenv->Look(type->name_));
+//
+//        // add frag to .data segmant for new record type
+//        if (typeid(*name_ty->ty_->ActualTy()) == typeid(type::RecordTy)) {
+//          type::RecordTy *record_ty = dynamic_cast<type::RecordTy *>(name_ty->ty_);
+//
+//          // Lable: "typename_describe"
+//          std::string descriptor_label = name_ty->sym_->Name() + "_describe";
+//          std::string descriptor_type_str;
+//
+//          // check fields for pointers, if has pointer, set 1 for according pos;
+//          // else set 0
+//          for (const type::Field *field : record_ty->fields_->GetList()) {
+//            if ((field->ty_)) {
+//              descriptor_type_str += "1";
+//            } else {
+//              descriptor_type_str += "0";
+//            }
+//          }
+//
+//          // add to frag
+//          frags->PushBack(new frame::StringFrag(
+//              temp::LabelFactory::NamedLabel(descriptor_label),
+//              descriptor_type_str));
+//        }
+//  }
   return new tr::ExExp(new tree::ConstExp(0));
 }
 

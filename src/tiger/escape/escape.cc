@@ -3,7 +3,9 @@
 #include <iostream>
 
 namespace esc {
-void EscFinder::FindEscape() { absyn_tree_->Traverse(env_.get()); }
+void EscFinder::FindEscape() {
+  absyn_tree_->Traverse(env_.get());
+}
 } // namespace esc
 
 namespace absyn {

@@ -27,13 +27,6 @@ static temp::Temp *callee_reg[6];
 void CodeGen::Codegen() {
   /* TODO: Put your lab5 code here */
   auto instr_list = new assem::InstrList();
-  std::cout<<frame_<<" get name\n";
-  if(!frame_){
-    std::cout<<"no frame\n";
-  }
-  if(!frame_->label){
-    std::cout<<"no label\n";
-  }
 
   fs_ = ((frame::X64Frame*)frame_)->label->Name() + "_framesize";
   auto x64RM = dynamic_cast<frame::X64RegManager *>(reg_manager);
@@ -71,7 +64,7 @@ void CodeGen::Codegen() {
   for (tree::Stm *stm : traces_->GetStmList()->GetList()) {
     stm->Munch(*assem_instr_->GetInstrList(), fs_);
   }
-  std::cout<<"make assemble munch \n";
+
   //restore callee registers
   {
     auto instr_p = &(*assem_instr_->GetInstrList());
@@ -142,7 +135,7 @@ void CjumpStm::Munch(assem::InstrList &instr_list, std::string_view fs) {
   std::string cjmp_string;
   instr_list.Append(
       new assem::OperInstr(
-          "cmpq `s0,`s1",
+          "cmpq `s1,`s0",
           nullptr,
           new temp::TempList({left,right}),
           nullptr
@@ -398,22 +391,8 @@ temp::Temp *ConstExp::Munch(assem::InstrList &instr_list, std::string_view fs) {
 
 temp::Temp *CallExp::Munch(assem::InstrList &instr_list, std::string_view fs) {
   /* TODO: Put your lab5 code here */
-//  DBG("Call MUNCH")
-//  instr_list.Append(
-//      new assem::OperInstr(
-//      "callq " + (reinterpret_cast<NameExp *>(fun_))->name_->Name(),
-//      reg_manager->CallerSaves(),
-//          reg_manager->ArgRegs(),
-//          nullptr));
-//  temp::Temp *reg = temp::TempFactory::NewTemp();
-//  //set return value
-//  instr_list.Append(
-//      new assem::MoveInstr(
-//          "movq `s0, `d0",
-//          new temp::TempList(reg),
-//          new temp::TempList(
-//              reg_manager->ReturnValue())));
-//  return reg;
+
+
   temp::TempList *arg_regs = args_->MunchArgs(instr_list, fs);
 
   // CALL instruction will trash caller saved registers

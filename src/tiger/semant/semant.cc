@@ -1,6 +1,6 @@
 #include "tiger/semant/semant.h"
 #include "tiger/absyn/absyn.h"
-
+#include "tiger/translate/translate.h"
 
 namespace absyn {
 
@@ -110,6 +110,8 @@ type::Ty *CallExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
   /* TODO: Put your lab4 code here */
     //func_函数名;args_参数
   env::FunEntry *funEntry = (env::FunEntry*) venv->Look(func_);
+  DBG("sem analyze call function ");
+  DBG(func_->Name()+"\n");
   if(funEntry== nullptr){
     errormsg->Error(pos_,"undefined function "+func_->Name());
   }
@@ -224,8 +226,11 @@ type::Ty *IfExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
   //if,then,else
   test_->SemAnalyze(venv,tenv,labelcount,errormsg);
   type::Ty* body_type = then_->SemAnalyze(venv,tenv,labelcount,errormsg);
-  if(elsee_ == nullptr){
-    if(body_type&&typeid(*(body_type->ActualTy()))!= typeid(type::VoidTy))
+  if(!elsee_){
+    // no else
+    // then must produce no value
+    if(body_type&&!body_type->IsSameType(type::VoidTy::Instance())&&
+        typeid(*(body_type->ActualTy()))!=typeid(type::NilTy))
       errormsg->Error(pos_,"if-then exp's body must produce no value");
     return type::VoidTy::Instance();
   }
@@ -479,6 +484,7 @@ void ProgSem::SemAnalyze() {
   FillBaseVEnv();
   FillBaseTEnv();
   absyn_tree_->SemAnalyze(venv_.get(), tenv_.get(), errormsg_.get());
+
 }
 
 } // namespace tr
