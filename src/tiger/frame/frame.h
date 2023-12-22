@@ -11,7 +11,7 @@
 
 
 namespace frame {
-
+class Frame;
 class RegManager {
 public:
   RegManager() : temp_map_(temp::Map::Empty()) {}
@@ -62,22 +62,39 @@ public:
   [[nodiscard]] virtual temp::Temp *StackPointer() = 0;
 
   [[nodiscard]] virtual temp::Temp *ReturnValue() = 0;
-
+  [[nodiscard]] virtual temp::Temp *ARG_nth(int num) = 0;
   temp::Map *temp_map_;
 protected:
   std::vector<temp::Temp *> regs_;
+
 };
 
 class Access {
 public:
   /* TODO: Put your lab5 code here */
-  
+  int offset_;
+  temp::Temp *reg;
+  virtual tree::Exp *ToExp(tree::Exp *frame_ptr) const = 0;
   virtual ~Access() = default;
-  
+  static Access *AllocLocal(Frame *frame, bool escape);
+
 };
 
 class Frame {
   /* TODO: Put your lab5 code here */
+  //extracts a list of k “accesses”
+  // denoting the locations where the formal parameters will be kept at run time as seen from inside the callee
+
+public:
+  temp::Label *label = nullptr;
+  std::list <frame::Access *> formals_;
+  int offset=0;
+  Frame(){};
+  Frame(temp::Label *name,std::list<bool> *escapes):label(name){};
+  [[nodiscard]] std::string GetLabel() { return label->Name(); }
+  [[nodiscard]] std::list<frame::Access *> GetFormals() {return formals_;}
+  virtual frame::Access *allocLocal(bool escape) = 0;
+  virtual int Offset() = 0;
 };
 
 /**
@@ -132,7 +149,10 @@ private:
 };
 
 /* TODO: Put your lab5 code here */
-
+tree::Exp *externalCall(std::string s, tree::ExpList *args);
+tree::Stm *procEntryExit1(frame::Frame *frame, tree::Stm *stm);
+assem::InstrList *procEntryExit2(assem::InstrList *body);
+assem::Proc *ProcEntryExit3(frame::Frame *frame, assem::InstrList * body);
 } // namespace frame
 
 #endif

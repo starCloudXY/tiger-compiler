@@ -71,10 +71,8 @@ void ProgTr::FillBaseTEnv() {
 void ProgTr::FillBaseVEnv() {
   type::Ty *result;
   type::TyList *formals;
-
   temp::Label *label = nullptr;
   tr::Level *level = main_level_.get();
-
   venv_->Enter(sym::Symbol::UniqueSymbol("flush"),
                new env::FunEntry(level, label, new type::TyList(),
                                  type::VoidTy::Instance()));
@@ -97,7 +95,8 @@ void ProgTr::FillBaseVEnv() {
 
   venv_->Enter(
       sym::Symbol::UniqueSymbol("print"),
-      new env::FunEntry(level, label, formals, type::VoidTy::Instance()));
+      new env::FunEntry(
+          level, label, formals, type::VoidTy::Instance()));
   venv_->Enter(sym::Symbol::UniqueSymbol("printi"),
                new env::FunEntry(level, label,
                                  new type::TyList(type::IntTy::Instance()),

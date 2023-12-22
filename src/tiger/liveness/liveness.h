@@ -24,6 +24,10 @@ public:
   GetList() const {
     return move_list_;
   }
+  void AddEdge(INodePtr src, INodePtr dst) {
+    if (!Contain(src, dst))
+      move_list_.emplace_back(src, dst);
+  }
   void Append(INodePtr src, INodePtr dst) { move_list_.emplace_back(src, dst); }
   bool Contain(INodePtr src, INodePtr dst);
   void Delete(INodePtr src, INodePtr dst);

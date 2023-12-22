@@ -14,6 +14,7 @@ int main(int argc, char **argv) {
   std::string_view fname;
   std::unique_ptr<absyn::AbsynTree> absyn_tree;
   reg_manager = new frame::X64RegManager();
+
   frags = new frame::Frags();
 
   if (argc < 2) {

@@ -1,4 +1,5 @@
 #include "tiger/symbol/symbol.h"
+#include <iostream>
 
 namespace {
 
@@ -24,6 +25,7 @@ Symbol *Symbol::UniqueSymbol(std::string_view name) {
       return sym;
   sym = new Symbol(static_cast<std::string>(name), syms);
   hashtable[index] = sym;
+  assert(sym);
   return sym;
 }
 
