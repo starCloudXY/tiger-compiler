@@ -9,24 +9,15 @@
 #include <iostream>
 extern frame::RegManager *reg_manager;
 namespace frame {
+
 enum Reg{
-  rax, rdi, rsi, rdx, rcx, r8, r9,
-  r10, r11, rbx, rbp, r12, r13, r14, r15, rsp
+  rax,rbx,rcx,rdx,rsi,rdi,rbp,r8, r9,
+  r10, r11,  r12, r13, r14, r15, rsp
 };
-const std::string X64RegNames[16] = {"rax","rbx", "rcx", "rdx", "rsi", "rdi", "rbp",
-                                     "rsp", "r8",  "r9",  "r10", "r11",
-                                     "r12", "r13", "r14", "r15"};
-class InRegAccess;
+
 class X64RegManager : public RegManager {
   /* TODO: Put your lab5 code here */
 public:
-  void PrintInfo(){
-    int cnt = 0;
-    for(auto reg:registers->GetList()){
-      std::cout<<X64RegNames[cnt]<<"   " <<reg->Int()<<std::endl;
-      cnt++;
-    }
-  }
   X64RegManager(){
     rax = temp::TempFactory::NewTemp();
     rdi = temp::TempFactory::NewTemp();
@@ -44,13 +35,13 @@ public:
     r15 = temp::TempFactory::NewTemp();
     rbp = temp::TempFactory::NewTemp();
     rsp = temp::TempFactory::NewTemp();
-    caller_save_reg = new temp::TempList({rax,rdi,rsi,rdx,rcx,r8,r9,r10,r11});
+    caller_save_reg = new temp::TempList({rax,rcx,rdx,rsi,rdi,r8,r9,r10,r11});
     callee_save_reg = new temp::TempList({rbx,rbp,r12,r13,r14,r15});
 
-    regs_ =  {rax, rdi, rsi, rdx, rcx, r8, r9,
-                                    r10, r11, rbx, rbp, r12, r13, r14, r15, rsp};
+    regs_ =  {rax,rbx,rcx,rdx,rsi,rdi,rbp,r8, r9,
+                                    r10, r11,  r12, r13, r14, r15, rsp};
     registers = new temp::TempList({rax, rdi, rsi, rdx, rcx, r8, r9,
-                                    r10, r11, rbx, rbp, r12, r13, r14, r15, rsp});
+                                    r10, r11, rbx, rbp, r12, r13, r14, r15});
     arg_reg = new temp::TempList({rdi,rsi,rdx,rcx,r8,r9});
     ret_sink_reg = new temp::TempList({rsp,rax,rbx,rbp,r12,r13,r14,r15});
     temp_map_ = temp::Map::Empty();
@@ -70,7 +61,6 @@ public:
     temp_map_->Enter(r14, new std::string("%r14"));
     temp_map_->Enter(r15, new std::string("%r15"));
     temp_map_->Enter(rsp, new std::string("%rsp"));
-    PrintInfo();
   }
 public:
 
@@ -97,11 +87,13 @@ public:
   };
 
  temp::TempList *ReturnSink()override{
-      return ret_sink_reg;
+      temp::TempList *temp_list = CalleeSaves();
+      temp_list->Append(StackPointer());
+      temp_list->Append(ReturnValue());
+      return temp_list;
   };
 
   temp::Temp *FramePointer()override{
-      assert(rbp);
       return rbp;
   };
   temp::Temp *StackPointer()override{
@@ -136,6 +128,7 @@ public:
 };
 class InFrameAccess : public Access {
 public:
+  int offset_;
   explicit InFrameAccess(int offset){
       offset_=offset;
   }
@@ -149,6 +142,17 @@ public:
                   offset_),
               frame_ptr
               ));
+  }
+};
+class InRegAccess : public Access {
+public:
+  temp::Temp *reg;
+  // Temp is a data structure represents virtual registers
+  explicit InRegAccess(temp::Temp *reg){
+      this->reg = reg;
+  };
+  tree::Exp *ToExp(tree::Exp *frame_ptr) const override{
+      return new tree::TempExp(reg);
   }
 };
 } // namespace frame

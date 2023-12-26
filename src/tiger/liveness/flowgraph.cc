@@ -25,7 +25,6 @@ void FlowGraphFactory::AssemFlowGraph() {
     prev_instr = instr;
     prev_node = node;
   }
-  // add edges for jump
   for (FNodePtr nodePtr:flowgraph_->Nodes()->GetList()){
     assem::Instr *instr = nodePtr->NodeInfo();
     if(typeid(*instr) == typeid(assem::OperInstr)){
@@ -80,24 +79,5 @@ temp::TempList *OperInstr::Use() const {
     return src_;
   else
     return new temp::TempList();
-}
-void OperInstr::ReplaceTemp(temp::Temp *oldTemp, temp::Temp *newTemp) {
-  if (dst_) {
-    dst_ = dst_->Replace(oldTemp, newTemp);
-  }
-  if (src_) {
-    src_ = src_->Replace(oldTemp, newTemp);
-  }
-}
-
-void LabelInstr::ReplaceTemp(temp::Temp *oldTemp, temp::Temp *newTemp) {}
-
-void MoveInstr::ReplaceTemp(temp::Temp *oldTemp, temp::Temp *newTemp) {
-  if (dst_) {
-    dst_ = dst_->Replace(oldTemp, newTemp);
-  }
-  if (src_) {
-    src_ = src_->Replace(oldTemp, newTemp);
-  }
 }
 } // namespace assem

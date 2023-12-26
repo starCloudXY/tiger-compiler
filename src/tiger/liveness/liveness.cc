@@ -75,13 +75,11 @@ void LiveGraphFactory::LiveMap() {
       }
       //in'[n] <- in[n] ; out'[n] <- out[n]
       std::set<temp::Temp *> out_set_pre = MakeSet(out_->Look(node)->GetList());
-      std::set<temp::Temp *> in_set_pre = MakeSet(in_->Look(node)->GetList());
-
       //in[n] <- use[n] U (out[n] – def[n])
       std::set<temp::Temp *> in_set = MakeSet(use->GetList());
       std::set<temp::Temp *> def_set = MakeSet(def->GetList());
       std::list<temp::Temp *> diff;
-
+      std::set<temp::Temp *> in_set_pre = MakeSet(in_->Look(node)->GetList());
       std::set_difference(out_set_pre.begin(), out_set_pre.end(),
                           def_set.begin(), def_set.end(),
                           back_inserter(diff));
@@ -143,7 +141,7 @@ void LiveGraphFactory::InterfGraph() {
       for(auto def : instr->Def()->GetList()){
         INodePtr nodePtr = temp_node_map_->Look(def);
         auto out_set = MakeSet(out_->Look(node)->GetList());
-        auto use_set = MakeSet(out_->Look(node)->GetList());
+        auto use_set = MakeSet(instr->Use()->GetList());
         std::list<temp::Temp *> diff_list;
         std::set_difference(out_set.begin(), out_set.end(),
                             use_set.begin(), use_set.end(),
@@ -170,8 +168,8 @@ void LiveGraphFactory::InterfGraph() {
           live_graph_.interf_graph->AddEdge(out_node, def_node);
         }
       }
+    }
   }
-}
 }
 
 

@@ -28,7 +28,8 @@ void CodeGen::Codegen() {
   /* TODO: Put your lab5 code here */
   auto instr_list = new assem::InstrList();
 
-  fs_ = ((frame::X64Frame*)frame_)->label->Name() + "_framesize";
+  fs_ = (frame_)->label->Name() + "_framesize";
+
   auto x64RM = dynamic_cast<frame::X64RegManager *>(reg_manager);
   instr_list->Append(new assem::OperInstr(
       "leaq " + fs_ + "(%rsp), `d0",
@@ -62,7 +63,7 @@ void CodeGen::Codegen() {
                      );
 
   for (tree::Stm *stm : traces_->GetStmList()->GetList()) {
-    stm->Munch(*assem_instr_->GetInstrList(), fs_);
+    stm->Munch(*instr_list, fs_);
   }
 
   //restore callee registers
@@ -76,6 +77,7 @@ void CodeGen::Codegen() {
     instr_p->Append(new assem::MoveInstr("movq `s0, `d0", new temp::TempList(x64RM->r15), new temp::TempList(callee_reg[CalleeType::r15])));
   }
   frame::procEntryExit2(assem_instr_->GetInstrList());
+//  assem_instr_ = std::make_unique<cg::AssemInstr>(frame::procEntryExit2(instr_list));
 }
 
 void AssemInstr::Print(FILE *out, temp::Map *map) const {

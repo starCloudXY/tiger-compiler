@@ -921,7 +921,7 @@ DBG("Start translate BREAK exp\n");
   return new tr::ExpAndTy(new tr::NxExp(stm), type::VoidTy::Instance());
 }
 
-tr::ExpAndTy *LetExp::    Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
+tr::ExpAndTy *LetExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
                                 tr::Level *level, temp::Label *label,
                                 err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab5 code here */
@@ -1089,15 +1089,13 @@ tr::Exp *FunctionDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
         return nullptr;
     }
     DBG("take in frag \n");
-    tree::TempExp *return_r = new tree::TempExp(reg_manager->ReturnValue());
     tree::Exp *exp = body_exp_and_ty->exp_->UnEx();
-    assert(return_r);
     frags->PushBack(
         new frame::ProcFrag(
             frame::procEntryExit1(
                 function_level->frame_,
                 new tree::MoveStm(
-                    return_r,
+                    new tree::TempExp(reg_manager->ReturnValue()),
                     exp)
                 ),
                 (function_level->frame_))
@@ -1185,35 +1183,6 @@ tr::Exp *TypeDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
         tmp = next;
   }
   }
-//  for (NameAndTy *type : types_->GetList()) {
-//        // find name_ in tenv
-//        type::NameTy *name_ty =
-//            dynamic_cast<type::NameTy *>(tenv->Look(type->name_));
-//
-//        // add frag to .data segmant for new record type
-//        if (typeid(*name_ty->ty_->ActualTy()) == typeid(type::RecordTy)) {
-//          type::RecordTy *record_ty = dynamic_cast<type::RecordTy *>(name_ty->ty_);
-//
-//          // Lable: "typename_describe"
-//          std::string descriptor_label = name_ty->sym_->Name() + "_describe";
-//          std::string descriptor_type_str;
-//
-//          // check fields for pointers, if has pointer, set 1 for according pos;
-//          // else set 0
-//          for (const type::Field *field : record_ty->fields_->GetList()) {
-//            if ((field->ty_)) {
-//              descriptor_type_str += "1";
-//            } else {
-//              descriptor_type_str += "0";
-//            }
-//          }
-//
-//          // add to frag
-//          frags->PushBack(new frame::StringFrag(
-//              temp::LabelFactory::NamedLabel(descriptor_label),
-//              descriptor_type_str));
-//        }
-//  }
   return new tr::ExExp(new tree::ConstExp(0));
 }
 

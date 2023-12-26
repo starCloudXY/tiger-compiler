@@ -15,17 +15,7 @@ tree::Exp *externalCall( std::string s, tree::ExpList *args) {
 
 
 
-class InRegAccess : public Access {
-public:
-  // Temp is a data structure represents virtual registers
-  explicit InRegAccess(temp::Temp *reg){
-    this->reg = reg;
-  };
-  tree::Exp *ToExp(tree::Exp *frame_ptr) const override{
-    DBG("------------------------in reg offset ");
-    return new tree::TempExp(reg);
-  }
-};
+
 
 X64Frame::X64Frame(temp::Label *name, std::list<bool> *escapes) {
   //offset on the memory
@@ -51,7 +41,7 @@ Access *X64Frame::allocLocal(bool escape) {
     }
 
 };
-/////?
+
 tree::Stm *procEntryExit1(frame::Frame *frame, tree::Stm *stm) {
     DBG("\nprocEntryExit1 \n");
     int num = 0;
@@ -111,7 +101,8 @@ tree::Stm *procEntryExit1(frame::Frame *frame, tree::Stm *stm) {
 }
 assem::InstrList *procEntryExit2(assem::InstrList *body) {
     temp::TempList *returnSink = reg_manager->ReturnSink();
-    body->Append(new assem::OperInstr("", nullptr, returnSink, nullptr));
+    body->Append(new assem::OperInstr("",
+                                      new temp::TempList(), returnSink, nullptr));
     return body;
 }
 assem::Proc *ProcEntryExit3(frame::Frame *frame, assem::InstrList * body) {
@@ -120,20 +111,12 @@ assem::Proc *ProcEntryExit3(frame::Frame *frame, assem::InstrList * body) {
     const int rsp_offset = -1*frame->offset;
     prologue << ".set " << name << "_framesize, " << rsp_offset << std::endl;
     prologue << name << ":" << std::endl;
-    if(frame->label->Name() == "tigermain") {
-    prologue << "subq $8, %rsp" << std::endl;
-    prologue << "movq %rbp, (%rsp)" << std::endl;
-    }
     prologue << "subq $" << rsp_offset << ", %rsp" << std::endl;
-
     // epilog part
     std::stringstream epilogue;
-    if(frame->label->Name() == "tigermain") {
-    epilogue << "movq (%rsp), %rbp" << std::endl;
-    epilogue << "addq $8, %rsp" << std::endl;
-    }
     epilogue << "addq $" << rsp_offset << ", %rsp" << std::endl;
-    epilogue << "retq" << std::endl << ".END" << std::endl;
+    epilogue << "retq" << std::endl;
+
     return new assem::Proc(prologue.str(), body, epilogue.str());
 }
 Access *Access::AllocLocal(frame::Frame *frame, bool escape) {

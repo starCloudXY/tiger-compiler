@@ -98,8 +98,8 @@ private:
   void EnableMoves(live::INodeListPtr nodes);
 
   void AddWorkList(live::INodePtr u);
-  bool Finish(live::INodePtr t, live::INodePtr r);
   bool Conservative(live::INodeListPtr nodes);
+  bool OK(live::INodePtr t, live::INodePtr r);
   live::INodePtr GetAlias(live::INodePtr n);
   void Combine(live::INodePtr u, live::INodePtr v);
   void Freeze();
@@ -110,7 +110,7 @@ private:
 
   assem::InstrList *RemoveRedundantMove(temp::Map *coloring);
   bool IsRedundant(assem::Instr *instr, temp::Map *coloring);
-
+  void ClearAndInit();
   int K;
 public:
   RegAllocator(frame::Frame *frame, std::unique_ptr<cg::AssemInstr> assem_instr);

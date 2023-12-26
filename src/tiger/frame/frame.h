@@ -72,8 +72,6 @@ protected:
 class Access {
 public:
   /* TODO: Put your lab5 code here */
-  int offset_;
-  temp::Temp *reg;
   virtual tree::Exp *ToExp(tree::Exp *frame_ptr) const = 0;
   virtual ~Access() = default;
   static Access *AllocLocal(Frame *frame, bool escape);
@@ -84,7 +82,6 @@ class Frame {
   /* TODO: Put your lab5 code here */
   //extracts a list of k “accesses”
   // denoting the locations where the formal parameters will be kept at run time as seen from inside the callee
-
 public:
   temp::Label *label = nullptr;
   std::list <frame::Access *> formals_;
