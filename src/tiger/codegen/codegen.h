@@ -47,6 +47,7 @@ public:
     return std::move(assem_instr_);
   }
 
+
 private:
   frame::Frame *frame_;
   std::string fs_; // Frame size label_

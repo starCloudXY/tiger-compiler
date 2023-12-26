@@ -1,4 +1,5 @@
 #include "tiger/codegen/assem.h"
+#include "tiger/translate/translate.h"
 
 #include <cassert>
 
@@ -78,6 +79,7 @@ void MoveInstr::Print(FILE *out, temp::Map *m) const {
   if (!dst_ && !src_) {
     std::size_t srcpos = assem_.find_first_of('%');
     if (srcpos != std::string::npos) {
+      DBG("no nopes!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
       std::size_t dstpos = assem_.find_first_of('%', srcpos + 1);
       if (dstpos != std::string::npos) {
         if ((assem_[srcpos + 1] == assem_[dstpos + 1]) &&
@@ -95,6 +97,25 @@ void InstrList::Print(FILE *out, temp::Map *m) const {
   for (auto instr : instr_list_)
     instr->Print(out, m);
   fprintf(out, "\n");
+}
+void OperInstr::ReplaceTemp(temp::Temp *oldTemp, temp::Temp *newTemp) {
+  if (dst_) {
+    dst_ = dst_->Replace(oldTemp, newTemp);
+  }
+  if (src_) {
+    src_ = src_->Replace(oldTemp, newTemp);
+  }
+}
+
+void LabelInstr::ReplaceTemp(temp::Temp *oldTemp, temp::Temp *newTemp) {}
+
+void MoveInstr::ReplaceTemp(temp::Temp *oldTemp, temp::Temp *newTemp) {
+  if (dst_) {
+    dst_ = dst_->Replace(oldTemp, newTemp);
+  }
+  if (src_) {
+    src_ = src_->Replace(oldTemp, newTemp);
+  }
 }
 
 } // namespace assem

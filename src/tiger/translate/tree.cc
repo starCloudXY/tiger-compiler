@@ -95,6 +95,8 @@ void CjumpStm::Print(FILE *out, int d) const {
 }
 
 void MoveStm::Print(FILE *out, int d) const {
+  assert(dst_);
+  assert(src_);
   Indent(out, d);
   fprintf(out, "MOVE(\n");
   dst_->Print(out, d + 1);
@@ -132,6 +134,9 @@ void MemExp::Print(FILE *out, int d) const {
 
 void TempExp::Print(FILE *out, int d) const {
   Indent(out, d);
+
+  assert( temp::Map::Name()->Look(temp_));
+  assert(temp::Map::Name()->Look(temp_)->data());
   fprintf(out, "temp %s", temp::Map::Name()->Look(temp_)->data());
 }
 
@@ -225,5 +230,6 @@ RelOp Commute(RelOp r) {
     assert(false);
   }
 }
+
 
 } // namespace tree

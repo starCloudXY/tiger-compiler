@@ -104,8 +104,9 @@ public:
   void DeleteNode(Node<T> *n);
   void Clear() { node_list_.clear(); }
   void Prepend(Node<T> *n) { node_list_.push_front(n); }
-  void Append(Node<T> *n) { node_list_.push_back(n); }
-
+  void Append(Node<T> *n) {
+    node_list_.push_back(n); }
+  void AddNode(Node<T> *n);
   // Set operation on two lists
   NodeList<T> *Union(NodeList<T> *nl);
   NodeList<T> *Diff(NodeList<T> *nl);
@@ -204,6 +205,12 @@ template <typename T> void NodeList<T>::DeleteNode(Node<T> *n) {
   if (it == node_list_.end())
     return;
   node_list_.erase(it);
+}
+template <typename T> void NodeList<T>::AddNode(Node<T> *n) {
+  assert(n);
+  if(!this->Contain(n)){
+    this->Append(n);
+  }
 }
 
 template <typename T> void NodeList<T>::CatList(NodeList<T> *nl) {
